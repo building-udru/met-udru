@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบกลางเสนอราคางานก่อสร้าง</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0f2340;        /* navy - structure/blueprint */
+    --ink-soft:#33507a;
+    --paper:#f6f4ee;      /* warm drafting paper */
+    --paper-2:#eeeae0;
+    --line:#c9c2b2;
+    --safety:#e0631e;     /* safety-orange accent */
+    --safety-deep:#b84e14;
+    --ok:#2f7a4f;
+    --ok-bg:#e6f2ea;
+    --warn:#a8710a;
+    --warn-bg:#faf0dd;
+    --white:#fffdf9;
+    --shadow: 0 1px 0 rgba(15,35,64,.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      linear-gradient(var(--paper) 0, var(--paper) 100%),
+      repeating-linear-gradient(0deg, rgba(15,35,64,.035) 0 1px, transparent 1px 28px),
+      repeating-linear-gradient(90deg, rgba(15,35,64,.035) 0 1px, transparent 1px 28px);
+    color:var(--ink);
+    font-family:'Sarabun',sans-serif;
+    min-height:100vh;
+  }
+  h1,h2,h3,.disp{font-family:'Kanit',sans-serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  a{color:var(--safety-deep);}
+
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 28px;border-bottom:2px solid var(--ink);
+    background:var(--white);
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .mark{
+    width:34px;height:34px;border:2.5px solid var(--ink);border-radius:4px;
+    display:flex;align-items:center;justify-content:center;color:var(--safety);
+    font-family:'Kanit';font-weight:700;font-size:15px;flex:none;
+    background:repeating-linear-gradient(45deg, transparent 0 4px, rgba(15,35,64,.08) 4px 5px);
+  }
+  .brand h1{font-size:18px;margin:0;font-weight:600;letter-spacing:.2px;}
+  .brand .sub{font-size:12px;color:var(--ink-soft);margin-top:1px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px;}
+
+  .btn{
+    font-family:'Sarabun';font-weight:600;font-size:14.5px;
+    border:2px solid var(--ink);background:var(--white);color:var(--ink);
+    padding:9px 16px;border-radius:6px;cursor:pointer;transition:transform .1s;
+  }
+  .btn:hover{transform:translateY(-1px);}
+  .btn:active{transform:translateY(0);}
+  .btn-primary{background:var(--safety);border-color:var(--safety-deep);color:#fff;}
+  .btn-primary:hover{background:var(--safety-deep);}
+  .btn-ghost{border-color:var(--line);color:var(--ink-soft);}
+  .btn-danger{border-color:#8a2c2c;color:#8a2c2c;background:#fff;}
+  .btn-sm{padding:6px 11px;font-size:13px;border-radius:5px;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+  .card{
+    background:var(--white);border:1.5px solid var(--ink);border-radius:8px;
+    padding:20px;margin-bottom:18px;box-shadow:var(--shadow);
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono';font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--safety-deep);font-weight:600;margin-bottom:6px;display:block;
+  }
+  label{display:block;font-size:13.5px;font-weight:600;color:var(--ink-soft);margin:14px 0 5px;}
+  label:first-child{margin-top:0;}
+  input,textarea,select{
+    width:100%;font-family:'Sarabun';font-size:15px;padding:10px 12px;
+    border:1.5px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);
+  }
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--safety);outline-offset:1px;border-color:var(--safety);}
+  textarea{resize:vertical;min-height:70px;}
+  .hint{font-size:12px;color:#7a7360;margin-top:4px;}
+  .row{display:flex;gap:12px;}
+  .row>*{flex:1;}
+
+  .badge{
+    display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;
+    padding:3px 9px;border-radius:20px;font-family:'JetBrains Mono';
+  }
+  .badge-open{background:var(--ok-bg);color:var(--ok);}
+  .badge-closed{background:#efe9df;color:#8a8370;}
+  .badge-edited{background:var(--warn-bg);color:var(--warn);}
+
+  .cat-chip{
+    display:inline-block;padding:5px 12px;border:1.5px solid var(--ink);border-radius:20px;
+    font-size:13px;font-weight:600;margin:0 6px 6px 0;cursor:pointer;background:var(--white);
+  }
+  .cat-chip.active{background:var(--ink);color:var(--white);}
+
+  .job-row{
+    display:flex;justify-content:space-between;align-items:center;gap:14px;
+    padding:14px 0;border-top:1px dashed var(--line);
+  }
+  .job-row:first-child{border-top:none;}
+  .job-title{font-weight:600;font-size:15.5px;}
+  .job-meta{font-size:12.5px;color:var(--ink-soft);margin-top:3px;}
+  .job-actions{display:flex;gap:8px;flex:none;flex-wrap:wrap;justify-content:flex-end;}
+
+  .quote-item{border-top:1px solid var(--paper-2);padding:12px 0;}
+  .quote-item:first-child{border-top:none;}
+  .quote-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .quote-company{font-weight:700;}
+  .quote-price{font-family:'JetBrains Mono';font-size:18px;font-weight:600;color:var(--safety-deep);}
+  .quote-note{font-size:13.5px;color:var(--ink-soft);margin-top:4px;}
+  .quote-file{font-size:13px;margin-top:6px;}
+  .lowest{outline:2px solid var(--ok);outline-offset:3px;border-radius:6px;}
+
+  .empty{text-align:center;padding:36px 20px;color:#8a8370;}
+  .empty .disp{font-size:16px;color:var(--ink-soft);margin-bottom:4px;}
+
+  .gate{max-width:380px;margin:12vh auto;text-align:center;}
+  .gate .mark{width:52px;height:52px;margin:0 auto 18px;}
+
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:12px 20px;border-radius:8px;
+    font-size:14px;font-weight:600;z-index:50;box-shadow:0 6px 20px rgba(15,35,64,.25);
+    opacity:0;pointer-events:none;transition:opacity .25s, bottom .25s;
+  }
+  .toast.show{opacity:1;bottom:32px;}
+
+  .modal-bg{
+    position:fixed;inset:0;background:rgba(15,35,64,.45);display:flex;
+    align-items:center;justify-content:center;z-index:40;padding:20px;
+  }
+  .modal{background:var(--white);border:2px solid var(--ink);border-radius:10px;padding:24px;max-width:460px;width:100%;max-height:88vh;overflow:auto;}
+
+  .link-box{
+    display:flex;gap:8px;background:var(--paper);border:1.5px dashed var(--line);
+    border-radius:6px;padding:8px 10px;align-items:center;margin-top:8px;
+  }
+  .link-box input{border:none;background:transparent;font-family:'JetBrains Mono';font-size:12.5px;padding:2px;}
+
+  .status-line{font-size:13px;color:var(--ink-soft);margin-top:10px;}
+  footer{text-align:center;font-size:12px;color:#a39c88;padding:30px 0 40px;}
+  @media(max-width:640px){
+    .wrap{padding:16px;}
+    .job-row{flex-direction:column;align-items:flex-start;}
+    .job-actions{justify-content:flex-start;}
+    .row{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="mark">MET</div>
+    <div>
+      <h1>ระบบกลางเสนอราคางานก่อสร้าง</h1>
+      <div class="sub" id="topbarSub">MET‑UDRU</div>
+    </div>
+  </div>
+  <div id="topbarActions"></div>
+</div>
+
+<div class="wrap" id="app">
+  <div class="empty">กำลังโหลด…</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ============== FIREBASE ============== -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ===================================================================
+   ตั้งค่า Firebase ของคุณตรงนี้ (ไปคัดลอกจาก Firebase Console
+   > Project settings > General > Your apps > SDK setup)
+   =================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyBFhFb7_vYwujPV4VYpewVo8PlcM_X1yKc",
+  authDomain: "met-udru.firebaseapp.com",
+  projectId: "met-udru",
+  storageBucket: "met-udru.firebasestorage.app",
+  messagingSenderId: "480414511578",
+  appId: "1:480414511578:web:57e01aca33d6768dc850e3"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+/* ===================================================================
+   ตั้งค่า Cloudinary สำหรับเก็บไฟล์แนบ (ฟรี ไม่ต้องผูกบัตรเครดิต)
+   1. สมัครฟรีที่ https://cloudinary.com
+   2. ไปที่ Settings > Upload > Upload presets > Add upload preset
+      - Signing Mode: เลือก "Unsigned"
+      - Folder: ใส่ quotes (ไม่บังคับ ระบบจะเติม /jobId ต่อท้ายให้เองอยู่แล้ว)
+      - กด Save แล้วคัดลอกชื่อ preset มาใส่ด้านล่างนี้
+   3. คัดลอก "Cloud name" จากหน้า Dashboard มาใส่ด้วย
+   หมายเหตุ: การลบไฟล์ทำผ่านหน้า Cloudinary Media Library โดยแอดมินเท่านั้น
+   (ตั้งใจไม่ทำปุ่มลบในแอปนี้ เพราะการลบไฟล์ต้องใช้ API Secret ซึ่งถ้าฝังไว้ใน
+   ไฟล์ index.html ที่เปิดเผยแบบนี้ ใครก็ดูซอร์สแล้วเอาไปใช้ลบไฟล์ของคนอื่นได้)
+   =================================================================== */
+const CLOUDINARY_CLOUD_NAME = "giingj2r";
+const CLOUDINARY_UPLOAD_PRESET = "met_udru";
+
+async function uploadToCloudinary(file, jobId){
+  const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
+  const form = new FormData();
+  form.append('file', file);
+  form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  form.append('folder', `quotes/${jobId}`);
+  const res = await fetch(url, { method:'POST', body: form });
+  if(!res.ok){
+    const errText = await res.text().catch(()=> '');
+    throw new Error('อัปโหลดไฟล์ไม่สำเร็จ: ' + errText);
+  }
+  const data = await res.json();
+  return { url: data.secure_url, name: file.name };
+}
+
+/* default categories, matches the folder structure used for MET-UDRU */
+const DEFAULT_CATEGORIES = [
+  "งานครุภัณฑ์","งานตกแต่ง","งานฝ้า","งานฝ้าเพดาน","งานพื้น","งานภูมิทัศน์","งานหลังคา"
+];
+
+const app = document.getElementById('app');
+const topbarActions = document.getElementById('topbarActions');
+const topbarSub = document.getElementById('topbarSub');
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function fmtBaht(n){
+  const num = Number(n)||0;
+  return num.toLocaleString('th-TH',{maximumFractionDigits:2}) + ' บาท';
+}
+function fmtDate(ts){
+  if(!ts) return '-';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'});
+}
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function uid(){ return Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4); }
+function normPhone(p){ return (p||'').replace(/[^0-9]/g,''); }
+
+/* =========================================================
+   ROUTER
+   - ?job=JOBID  -> public quote submission page
+   - otherwise   -> admin area (requires sign-in)
+========================================================= */
+const params = new URLSearchParams(location.search);
+const jobParam = params.get('job');
+
+if(jobParam){
+  topbarSub.textContent = 'หน้าส่งใบเสนอราคา';
+  renderPublicJob(jobParam);
+} else {
+  topbarSub.textContent = 'หลังบ้านผู้ดูแล';
+  auth.onAuthStateChanged(user=>{
+    if(user){ renderAdmin(user); }
+    else { renderLogin(); }
+  });
+}
+
+/* =========================================================
+   ADMIN: LOGIN
+========================================================= */
+function renderLogin(){
+  topbarActions.innerHTML = '';
+  app.innerHTML = `
+    <div class="gate card">
+      <div class="mark disp" style="width:52px;height:52px;font-size:17px;margin:0 auto 18px;">MET</div>
+      <h2 class="disp" style="margin:0 0 4px;">เข้าสู่ระบบผู้ดูแล</h2>
+      <p class="hint" style="margin-bottom:18px;">สำหรับเจ้าหน้าที่มหาวิทยาลัยเท่านั้น</p>
+      <label>อีเมล</label>
+      <input id="loginEmail" type="email" placeholder="admin@example.com">
+      <label>รหัสผ่าน</label>
+      <input id="loginPass" type="password" placeholder="••••••••">
+      <button class="btn btn-primary" style="width:100%;margin-top:18px;" onclick="doLogin()">เข้าสู่ระบบ</button>
+      <div class="hint" id="loginErr" style="color:#a8362c;margin-top:10px;"></div>
+      <p class="hint" style="margin-top:16px;">สร้างบัญชีผู้ดูแลได้ที่ Firebase Console &gt; Authentication &gt; Sign-in method &gt; Email/Password</p>
+    </div>
+  `;
+}
+function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginErr');
+  err.textContent = '';
+  auth.signInWithEmailAndPassword(email, pass).catch(e=>{
+    err.textContent = 'เข้าสู่ระบบไม่สำเร็จ: ' + (e.message||e.code);
+  });
+}
+
+/* =========================================================
+   ADMIN: DASHBOARD
+========================================================= */
+let ADMIN_STATE = { categories:[], jobs:[], activeCat:'all', quotesCache:{} };
+
+function renderAdmin(user){
+  topbarActions.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="hint" style="margin:0;">${escapeHtml(user.email)}</span>
+      <button class="btn btn-ghost btn-sm" onclick="auth.signOut()">ออกจากระบบ</button>
+    </div>`;
+  loadAdminData();
+}
+
+async function loadAdminData(){
+  app.innerHTML = `<div class="empty">กำลังโหลดข้อมูล…</div>`;
+  const catSnap = await db.collection('categories').orderBy('order').get().catch(()=>null);
+  if(!catSnap || catSnap.empty){
+    await seedCategories();
+    return loadAdminData();
+  }
+  ADMIN_STATE.categories = catSnap.docs.map(d=>({id:d.id, ...d.data()}));
+
+  const jobSnap = await db.collection('jobs').orderBy('createdAt','desc').get();
+  ADMIN_STATE.jobs = jobSnap.docs.map(d=>({id:d.id, ...d.data()}));
+
+  drawAdmin();
+}
+
+async function seedCategories(){
+  const batch = db.batch();
+  DEFAULT_CATEGORIES.forEach((name, i)=>{
+    const ref = db.collection('categories').doc();
+    batch.set(ref, {name, order:i});
+  });
+  await batch.commit();
+}
+
+function drawAdmin(){
+  const cats = ADMIN_STATE.categories;
+  const activeCat = ADMIN_STATE.activeCat;
+  const jobs = ADMIN_STATE.jobs.filter(j => activeCat==='all' || j.categoryId===activeCat);
+
+  app.innerHTML = `
+    <div class="card">
+      <span class="eyebrow">หมวดงาน</span>
+      <div>
+        <span class="cat-chip ${activeCat==='all'?'active':''}" onclick="setCat('all')">ทั้งหมด (${ADMIN_STATE.jobs.length})</span>
+        ${cats.map(c=>{
+          const count = ADMIN_STATE.jobs.filter(j=>j.categoryId===c.id).length;
+          return `<span class="cat-chip ${activeCat===c.id?'active':''}" onclick="setCat('${c.id}')">${escapeHtml(c.name)} (${count})</span>`;
+        }).join('')}
+        <span class="cat-chip" style="border-style:dashed;" onclick="promptNewCategory()">+ เพิ่มหมวดงาน</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span class="eyebrow" style="margin:0;">รายการงาน</span>
+        <button class="btn btn-primary btn-sm" onclick="openJobModal()">+ สร้างงานใหม่</button>
+      </div>
+      <div id="jobList">
+        ${jobs.length===0 ? `<div class="empty"><div class="disp">ยังไม่มีงานในหมวดนี้</div>กด “สร้างงานใหม่” เพื่อเริ่มเปิดรับใบเสนอราคา</div>` :
+          jobs.map(j=>renderJobRow(j)).join('')}
+      </div>
+    </div>
+    <div id="quotesPanel"></div>
+  `;
+}
+
+function setCat(id){ ADMIN_STATE.activeCat = id; drawAdmin(); }
+
+function catName(id){ const c = ADMIN_STATE.categories.find(c=>c.id===id); return c ? c.name : '-'; }
+
+function renderJobRow(j){
+  const isOpen = j.status !== 'closed';
+  const shareUrl = location.origin + location.pathname + '?job=' + j.id;
+  return `
+    <div class="job-row">
+      <div>
+        <div class="job-title">${escapeHtml(j.title)}
+          <span class="badge ${isOpen?'badge-open':'badge-closed'}">${isOpen?'เปิดรับ':'ปิดรับแล้ว'}</span>
+        </div>
+        <div class="job-meta">${escapeHtml(catName(j.categoryId))}${j.deadline? ' · กำหนดส่งภายใน ' + escapeHtml(j.deadline):''} · สร้างเมื่อ ${fmtDate(j.createdAt)}</div>
+        <div class="link-box">
+          <input readonly value="${shareUrl}" onclick="this.select()">
+          <button class="btn btn-ghost btn-sm" onclick="copyLink('${shareUrl}')">คัดลอกลิงก์</button>
+        </div>
+      </div>
+      <div class="job-actions">
+        <button class="btn btn-sm" onclick="toggleQuotes('${j.id}')">ดูใบเสนอราคา</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleJobStatus('${j.id}','${isOpen?'closed':'open'}')">${isOpen?'ปิดรับงาน':'เปิดรับอีกครั้ง'}</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteJob('${j.id}')">ลบ</button>
+      </div>
+    </div>
+    <div id="quotes-${j.id}"></div>
+  `;
+}
+
+function copyLink(url){
+  navigator.clipboard.writeText(url).then(()=>toast('คัดลอกลิงก์แล้ว'));
+}
+
+async function toggleJobStatus(jobId, newStatus){
+  await db.collection('jobs').doc(jobId).update({status:newStatus});
+  const j = ADMIN_STATE.jobs.find(j=>j.id===jobId); if(j) j.status = newStatus;
+  drawAdmin();
+}
+
+async function deleteJob(jobId){
+  if(!confirm('ยืนยันลบงานนี้? ใบเสนอราคาทั้งหมดของงานนี้จะถูกลบด้วย')) return;
+  const qs = await db.collection('quotes').where('jobId','==',jobId).get();
+  const batch = db.batch();
+  qs.docs.forEach(d=>batch.delete(d.ref));
+  batch.delete(db.collection('jobs').doc(jobId));
+  await batch.commit();
+  ADMIN_STATE.jobs = ADMIN_STATE.jobs.filter(j=>j.id!==jobId);
+  drawAdmin();
+  toast('ลบงานแล้ว');
+}
+
+let openQuotePanels = new Set();
+async function toggleQuotes(jobId){
+  const el = document.getElementById('quotes-'+jobId);
+  if(openQuotePanels.has(jobId)){
+    openQuotePanels.delete(jobId);
+    el.innerHTML = '';
+    return;
+  }
+  openQuotePanels.add(jobId);
+  el.innerHTML = `<div class="empty" style="padding:16px;">กำลังโหลดใบเสนอราคา…</div>`;
+  const snap = await db.collection('quotes').where('jobId','==',jobId).get();
+  let quotes = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  quotes.sort((a,b)=>(a.price||0)-(b.price||0));
+  if(quotes.length===0){
+    el.innerHTML = `<div class="empty" style="padding:16px;">ยังไม่มีบริษัทเสนอราคาเข้ามา</div>`;
+    return;
+  }
+  const minPrice = Math.min(...quotes.map(q=>q.price||Infinity));
+  el.innerHTML = `<div class="card" style="margin-top:8px;background:var(--paper);">
+    <span class="eyebrow">ใบเสนอราคาทั้งหมด (${quotes.length}) · เรียงราคาต่ำ→สูง</span>
+    <div class="hint" style="margin-bottom:10px;">ไฟล์แนบทั้งหมดของงานนี้อยู่ในโฟลเดอร์ <span class="mono">quotes/${jobId}</span> บน Cloudinary หากต้องการลบไฟล์ ให้ลบผ่าน <a href="https://console.cloudinary.com/console/media_library" target="_blank" rel="noopener">Cloudinary Media Library</a> โดยตรง</div>
+    ${quotes.map(q=>`
+      <div class="quote-item ${q.price===minPrice?'lowest':''}">
+        <div class="quote-top">
+          <div>
+            <span class="quote-company">${escapeHtml(q.companyName)}</span>
+            ${q.isEdited?'<span class="badge badge-edited">แก้ไขแล้ว</span>':''}
+            ${q.price===minPrice?'<span class="badge badge-open">ราคาต่ำสุด</span>':''}
+          </div>
+          <div class="quote-price">${fmtBaht(q.price)}</div>
+        </div>
+        <div class="quote-note">โทร ${escapeHtml(q.companyPhone)} · ส่งล่าสุด ${fmtDate(q.updatedAt||q.submittedAt)}${q.firstSubmittedAt && q.isEdited ? ' (ครั้งแรก '+fmtDate(q.firstSubmittedAt)+')' : ''}</div>
+        ${q.note?`<div class="quote-note">หมายเหตุ: ${escapeHtml(q.note)}</div>`:''}
+        ${q.fileURL?`<div class="quote-file">📎 <a href="${q.fileURL}" target="_blank" rel="noopener">${escapeHtml(q.fileName||'เอกสารแนบ')}</a></div>`:''}
+      </div>
+    `).join('')}
+  </div>`;
+}
+
+function promptNewCategory(){
+  const name = prompt('ชื่อหมวดงานใหม่ เช่น งานระบบไฟฟ้า');
+  if(!name) return;
+  db.collection('categories').add({name, order: ADMIN_STATE.categories.length}).then(()=>{
+    toast('เพิ่มหมวดงานแล้ว'); loadAdminData();
+  });
+}
+
+function openJobModal(){
+  const catOptions = ADMIN_STATE.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `
+    <div class="modal">
+      <h3 class="disp" style="margin-top:0;">สร้างงานใหม่</h3>
+      <label>หมวดงาน</label>
+      <select id="newJobCat">${catOptions}</select>
+      <label>ชื่องาน / รายการที่ต้องการเสนอราคา</label>
+      <input id="newJobTitle" placeholder="เช่น เก้าอี้จัดเลี้ยง 200 ตัว">
+      <label>รายละเอียด (ไม่บังคับ)</label>
+      <textarea id="newJobDesc" placeholder="สเปค จำนวน เงื่อนไข ฯลฯ"></textarea>
+      <label>กำหนดส่งราคาภายใน (ไม่บังคับ)</label>
+      <input id="newJobDeadline" placeholder="เช่น 30 ก.ย. 2569">
+      <div style="display:flex;gap:10px;margin-top:20px;">
+        <button class="btn btn-ghost" style="flex:1;" onclick="this.closest('.modal-bg').remove()">ยกเลิก</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="createJob()">สร้างงาน</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+}
+
+async function createJob(){
+  const categoryId = document.getElementById('newJobCat').value;
+  const title = document.getElementById('newJobTitle').value.trim();
+  const description = document.getElementById('newJobDesc').value.trim();
+  const deadline = document.getElementById('newJobDeadline').value.trim();
+  if(!title){ toast('กรุณากรอกชื่องาน'); return; }
+  const ref = await db.collection('jobs').add({
+    categoryId, title, description, deadline,
+    status:'open', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  document.querySelector('.modal-bg')?.remove();
+  toast('สร้างงานแล้ว — อย่าลืมคัดลอกลิงก์ไปส่งให้บริษัท');
+  loadAdminData();
+}
+
+/* =========================================================
+   PUBLIC: JOB VIEW + QUOTE SUBMISSION
+========================================================= */
+async function renderPublicJob(jobId){
+  topbarActions.innerHTML = '';
+  app.innerHTML = `<div class="empty">กำลังโหลดข้อมูลงาน…</div>`;
+  let jobDoc;
+  try{
+    jobDoc = await db.collection('jobs').doc(jobId).get();
+  }catch(e){
+    app.innerHTML = `<div class="card empty"><div class="disp">ไม่สามารถโหลดข้อมูลได้</div>ตรวจสอบลิงก์อีกครั้ง หรือติดต่อผู้ดูแลระบบ</div>`;
+    return;
+  }
+  if(!jobDoc.exists){
+    app.innerHTML = `<div class="card empty"><div class="disp">ไม่พบงานนี้</div>ลิงก์อาจไม่ถูกต้องหรือถูกลบไปแล้ว</div>`;
+    return;
+  }
+  const job = jobDoc.data();
+  let catName = '-';
+  try{
+    const c = await db.collection('categories').doc(job.categoryId).get();
+    if(c.exists) catName = c.data().name;
+  }catch(e){}
+
+  if(job.status === 'closed'){
+    app.innerHTML = `
+      <div class="card">
+        <span class="eyebrow">${escapeHtml(catName)}</span>
+        <h2 class="disp" style="margin:4px 0 0;">${escapeHtml(job.title)}</h2>
+        <p class="status-line" style="color:#a8362c;font-weight:600;">งานนี้ปิดรับใบเสนอราคาแล้ว</p>
+      </div>`;
+    return;
+  }
+
+  app.innerHTML = `
+    <div class="card">
+      <span class="eyebrow">${escapeHtml(catName)}</span>
+      <h2 class="disp" style="margin:4px 0 8px;">${escapeHtml(job.title)}</h2>
+      ${job.description ? `<p style="white-space:pre-wrap;color:var(--ink-soft);">${escapeHtml(job.description)}</p>` : ''}
+      ${job.deadline ? `<p class="status-line">กำหนดส่งราคาภายใน: <strong>${escapeHtml(job.deadline)}</strong></p>` : ''}
+    </div>
+
+    <div class="card" id="formCard">
+      <span class="eyebrow">ส่งใบเสนอราคา</span>
+      <label>ชื่อบริษัท *</label>
+      <input id="qCompany" placeholder="บริษัท ตัวอย่าง จำกัด">
+      <div class="row">
+        <div>
+          <label>เบอร์ติดต่อ *</label>
+          <input id="qPhone" placeholder="08x-xxx-xxxx">
+        </div>
+        <div>
+          <label>ราคาที่เสนอ (บาท) *</label>
+          <input id="qPrice" type="number" min="0" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+      <label>หมายเหตุ (ไม่บังคับ)</label>
+      <textarea id="qNote" placeholder="เงื่อนไข ระยะเวลาส่งมอบ ฯลฯ"></textarea>
+      <label>แนบไฟล์ใบเสนอราคา / รูปสินค้า (ไม่บังคับ)</label>
+      <input id="qFile" type="file" accept=".pdf,image/*">
+      <div class="hint">ไฟล์ที่แนบจะถูกอัปโหลดเก็บไว้ในระบบโดยตรง (ไม่ใช่ลิงก์อ้างอิง) หากเบอร์ติดต่อนี้เคยส่งราคาสำหรับงานนี้มาก่อน ระบบจะปรับปรุงราคาล่าสุดให้ และจะขึ้นสถานะว่า “แก้ไขแล้ว”</div>
+      <button class="btn btn-primary" style="width:100%;margin-top:18px;" id="submitBtn" onclick="submitQuote('${jobId}')">ส่งใบเสนอราคา</button>
+      <div class="hint" id="submitMsg" style="margin-top:10px;"></div>
+    </div>
+  `;
+}
+
+async function submitQuote(jobId){
+  const company = document.getElementById('qCompany').value.trim();
+  const phoneRaw = document.getElementById('qPhone').value.trim();
+  const phone = normPhone(phoneRaw);
+  const price = parseFloat(document.getElementById('qPrice').value);
+  const note = document.getElementById('qNote').value.trim();
+  const fileInput = document.getElementById('qFile');
+  const msg = document.getElementById('submitMsg');
+  const btn = document.getElementById('submitBtn');
+
+  if(!company || !phone || isNaN(price)){
+    msg.textContent = 'กรุณากรอกชื่อบริษัท เบอร์ติดต่อ และราคาให้ครบถ้วน';
+    msg.style.color = '#a8362c';
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'กำลังส่ง…'; msg.textContent=''; msg.style.color='';
+
+  const quoteId = jobId + '_' + phone;
+  const quoteRef = db.collection('quotes').doc(quoteId);
+
+  try{
+    const existing = await quoteRef.get();
+    const isEdit = existing.exists;
+
+    let fileURL = existing.exists ? existing.data().fileURL || null : null;
+    let fileName = existing.exists ? existing.data().fileName || null : null;
+    const file = fileInput.files[0];
+    if(file){
+      btn.textContent = 'กำลังอัปโหลดไฟล์แนบ…';
+      const uploaded = await uploadToCloudinary(file, jobId);
+      fileURL = uploaded.url;
+      fileName = uploaded.name;
+      btn.textContent = 'กำลังส่ง…';
+    }
+
+    const payload = {
+      jobId, companyName: company, companyPhone: phoneRaw,
+      price, note, fileURL, fileName,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      isEdited: isEdit
+    };
+    if(isEdit){
+      payload.firstSubmittedAt = existing.data().firstSubmittedAt || existing.data().submittedAt || firebase.firestore.FieldValue.serverTimestamp();
+    } else {
+      payload.submittedAt = firebase.firestore.FieldValue.serverTimestamp();
+      payload.firstSubmittedAt = firebase.firestore.FieldValue.serverTimestamp();
+    }
+
+    await quoteRef.set(payload, {merge:true});
+
+    msg.style.color = 'var(--ok)';
+    msg.textContent = isEdit
+      ? '✓ แก้ไขใบเสนอราคาเรียบร้อยแล้ว ระบบปรับปรุงจากที่เคยส่งไว้ก่อนหน้านี้'
+      : '✓ ส่งใบเสนอราคาเรียบร้อยแล้ว ขอบคุณครับ';
+    btn.textContent = 'ส่งราคาอีกครั้ง (แก้ไข)';
+  }catch(e){
+    msg.style.color = '#a8362c';
+    msg.textContent = 'เกิดข้อผิดพลาด: ' + (e.message||e);
+  }finally{
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
