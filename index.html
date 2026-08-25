@@ -622,14 +622,6 @@ function vCatName(id){ const c = VENDOR_STATE.categories.find(c=>c.id===id); ret
 
 function drawVendorShell(){
   app.innerHTML = `
-    <div class="card">
-      <span class="eyebrow">ข้อมูลบริษัทของท่าน</span>
-      <div class="row">
-        <div><label>ชื่อบริษัท</label><input id="vCompany" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName)}" oninput="VENDOR_STATE.companyName=this.value"></div>
-        <div><label>เบอร์ติดต่อ</label><input id="vPhone" placeholder="08x-xxx-xxxx" value="${escapeHtml(VENDOR_STATE.companyPhone)}" oninput="VENDOR_STATE.companyPhone=this.value"></div>
-      </div>
-      <div class="hint">กรอกครั้งเดียว ใช้ได้ทั้งการเสนอราคาโครงการและการเพิ่มข้อมูลสินค้า ระบบผูกกับเบอร์นี้เพื่อให้แก้ไขย้อนหลังได้เอง</div>
-    </div>
     <div class="tabbar">
       <div class="tabbtn ${VENDOR_STATE.tab==='bid'?'active':''}" onclick="setVendorTab('bid')">ประมูลราคาโครงการ</div>
       <div class="tabbtn ${VENDOR_STATE.tab==='data'?'active':''}" onclick="setVendorTab('data')">เสนอสินค้าทั่วไป</div>
@@ -643,6 +635,16 @@ function requirePhone(){
   const phone = normPhone(VENDOR_STATE.companyPhone);
   if(!VENDOR_STATE.companyName.trim() || !phone){ toast('กรุณากรอกชื่อบริษัทและเบอร์ติดต่อก่อน'); return null; }
   return phone;
+}
+/* กระจายชื่อบริษัท/เบอร์ที่กรอกไปยังช่องอื่นที่ยังว่างอยู่ในหน้าเดียวกัน เพื่อความสะดวกเวลาเสนอหลายรายการ */
+function syncCompanyField(val, type){
+  if(type==='name'){
+    VENDOR_STATE.companyName = val;
+    document.querySelectorAll('[id^="bidcompany_"],[id^="pCompany"]').forEach(el=>{ if(!el.value) el.value = val; });
+  } else {
+    VENDOR_STATE.companyPhone = val;
+    document.querySelectorAll('[id^="bidphone_"],[id^="pPhone"]').forEach(el=>{ if(!el.value) el.value = val; });
+  }
 }
 
 function drawVendorContent(){
@@ -673,7 +675,6 @@ function vendorJobListHtml(){
   </div>`;
 }
 function openVendorJob(jobId){
-  const phone = requirePhone(); if(!phone) return;
   VENDOR_STATE.activeJobId = jobId;
   drawVendorContent();
 }
@@ -682,15 +683,32 @@ function backToJobList(){ VENDOR_STATE.activeJobId = null; drawVendorContent(); 
 async function loadVendorJobDetail(jobId){
   const job = VENDOR_STATE.jobs.find(j=>j.id===jobId);
   VENDOR_STATE.activeJob = job;
-  const phone = normPhone(VENDOR_STATE.companyPhone);
+  VENDOR_STATE.existingBid = null;
 
   const pubSnap = await db.collection('publicBids').where('jobId','==',jobId).get().catch(()=>null);
   VENDOR_STATE.publicBids = pubSnap ? pubSnap.docs.map(d=>d.data()) : [];
 
-  const quoteDoc = await db.collection('quotes').doc(jobId+'_'+phone).get().catch(()=>null);
-  VENDOR_STATE.existingBid = (quoteDoc && quoteDoc.exists) ? quoteDoc.data() : null;
+  const phone = normPhone(VENDOR_STATE.companyPhone);
+  if(phone){
+    const quoteDoc = await db.collection('quotes').doc(jobId+'_'+phone).get().catch(()=>null);
+    VENDOR_STATE.existingBid = (quoteDoc && quoteDoc.exists) ? quoteDoc.data() : null;
+  }
 
   drawVendorJobDetailBody();
+}
+
+/* เมื่อกรอกเบอร์ในรายการใดรายการหนึ่งแล้วออกจากช่อง ให้ลองดึงใบเสนอราคาเดิม (ถ้ามี) มาเติมให้ทุกรายการ */
+async function lookupExistingBidFromPhone(jobId, phoneVal){
+  const phone = normPhone(phoneVal);
+  if(!phone) return;
+  const quoteDoc = await db.collection('quotes').doc(jobId+'_'+phone).get().catch(()=>null);
+  const bid = (quoteDoc && quoteDoc.exists) ? quoteDoc.data() : null;
+  if(bid){
+    VENDOR_STATE.existingBid = bid;
+    VENDOR_STATE.companyName = bid.companyName || VENDOR_STATE.companyName;
+    VENDOR_STATE.companyPhone = bid.companyPhone || phoneVal;
+    drawVendorJobDetailBody();
+  }
 }
 
 function vendorJobDetailHtml(){
@@ -732,6 +750,10 @@ function drawVendorJobDetailBody(){
             <div class="item-detail">${[it.spec, it.unit?('หน่วย: '+it.unit):'', it.qty?('จำนวน: '+it.qty):''].filter(Boolean).join(' · ')||'-'}</div>
             <div class="item-offers">${offers.length? '<b style="display:block;margin-bottom:6px;">บริษัทที่เสนอแล้ว:</b>'+offers.join('') : 'ยังไม่มีบริษัทเสนอรายการนี้'}</div>
             <div class="row">
+              <div><label style="margin-top:0;">ชื่อบริษัทของท่าน</label><input id="bidcompany_${it.id}" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName||'')}" oninput="syncCompanyField(this.value,'name')"></div>
+              <div><label style="margin-top:0;">เบอร์ติดต่อ</label><input id="bidphone_${it.id}" placeholder="08x-xxx-xxxx" value="${escapeHtml(VENDOR_STATE.companyPhone||'')}" oninput="syncCompanyField(this.value,'phone')" onblur="lookupExistingBidFromPhone('${VENDOR_STATE.activeJobId}', this.value)"></div>
+            </div>
+            <div class="row">
               <div><label style="margin-top:0;">ผลิตภัณฑ์/ยี่ห้อที่เสนอ</label><input id="bidprod_${it.id}" placeholder="เช่น กระเบื้อง Cotto รุ่น..." value="${prev?escapeHtml(prev.product||''):''}"></div>
               <div><label style="margin-top:0;">ราคา (บาท) — แอดมินเห็นเท่านั้น</label><input id="bidprice_${it.id}" type="number" min="0" step="0.01" placeholder="0.00" value="${prev&&prev.price!=null?prev.price:''}"></div>
             </div>
@@ -750,7 +772,8 @@ function drawVendorJobDetailBody(){
 
 /* ส่งราคาทีละรายการสเปค — แต่ละรายการเป็นใบเสนอราคาแยกอิสระ ไม่ต้องกรอกครบทุกรายการ */
 async function submitItemBid(jobId, itemId){
-  const phone = requirePhone(); if(!phone) return;
+  const companyEl = document.getElementById('bidcompany_'+itemId);
+  const phoneEl = document.getElementById('bidphone_'+itemId);
   const prodEl = document.getElementById('bidprod_'+itemId);
   const priceEl = document.getElementById('bidprice_'+itemId);
   const noteEl = document.getElementById('biditemnote_'+itemId);
@@ -758,9 +781,16 @@ async function submitItemBid(jobId, itemId){
   const btn = document.getElementById('itembtn_'+itemId);
   const msg = document.getElementById('itemmsg_'+itemId);
   const card = document.getElementById('itemcard_'+itemId);
+  const companyVal = companyEl ? companyEl.value.trim() : '';
+  const phoneRaw = phoneEl ? phoneEl.value.trim() : '';
+  const phone = normPhone(phoneRaw);
   const priceVal = priceEl ? parseFloat(priceEl.value) : NaN;
   const prodVal = prodEl ? prodEl.value.trim() : '';
   const noteVal = noteEl ? noteEl.value.trim() : '';
+  if(!companyVal || !phone){
+    msg.style.color='var(--flame)'; msg.textContent='กรุณากรอกชื่อบริษัทและเบอร์ติดต่อก่อนส่ง';
+    return;
+  }
   if(isNaN(priceVal) && !prodVal){
     msg.style.color='var(--flame)'; msg.textContent='กรุณากรอกผลิตภัณฑ์หรือราคาก่อนส่ง';
     return;
@@ -789,7 +819,7 @@ async function submitItemBid(jobId, itemId){
     if(!isNaN(priceVal)) entry.price = priceVal;
 
     const payload = {
-      jobId, companyName: VENDOR_STATE.companyName.trim(), companyPhone: VENDOR_STATE.companyPhone.trim(),
+      jobId, companyName: companyVal, companyPhone: phoneRaw,
       bids: { [itemId]: entry },
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: wasEdit
     };
@@ -798,12 +828,14 @@ async function submitItemBid(jobId, itemId){
     await quoteRef.set(payload, {merge:true});
 
     await pubRef.set({
-      jobId, companyName: VENDOR_STATE.companyName.trim(), companyPhone: VENDOR_STATE.companyPhone.trim(),
+      jobId, companyName: companyVal, companyPhone: phoneRaw,
       bids: { [itemId]: { product: entry.product || '', note: entry.note || '' } },
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: wasEdit,
       submittedAt: payload.firstSubmittedAt || firebase.firestore.FieldValue.serverTimestamp()
     }, {merge:true});
 
+    VENDOR_STATE.companyName = companyVal;
+    VENDOR_STATE.companyPhone = phoneRaw;
     msg.style.color='var(--ok)'; msg.textContent = '✓ ส่งราคารายการนี้เรียบร้อยแล้ว';
     toast('บันทึกราคารายการนี้แล้ว');
     if(!VENDOR_STATE.existingBid) VENDOR_STATE.existingBid = { bids:{} };
@@ -826,6 +858,10 @@ function vendorDataTabHtml(){
     <div class="card">
       <span class="eyebrow">เสนอข้อมูลสินค้า/ผลิตภัณฑ์ (ไม่ผูกกับโครงการใด)</span>
       <p class="hint" style="margin-top:0;">ใช้สำหรับนำเสนอสินค้าทั่วไปของบริษัทท่านตามหมวดงาน ไม่จำเป็นต้องเกี่ยวข้องกับโครงการที่เปิดประมูลอยู่ · บริษัทอื่นเห็นได้เฉพาะชื่อบริษัทและชื่อผลิตภัณฑ์ ส่วน “ราคา” และเบอร์โทรเห็นเฉพาะแอดมินเท่านั้น</p>
+      <div class="row">
+        <div><label style="margin-top:0;">ชื่อบริษัทของท่าน</label><input id="pCompany" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName||'')}" oninput="syncCompanyField(this.value,'name')"></div>
+        <div><label style="margin-top:0;">เบอร์ติดต่อ</label><input id="pPhone" placeholder="08x-xxx-xxxx" value="${escapeHtml(VENDOR_STATE.companyPhone||'')}" oninput="syncCompanyField(this.value,'phone')"></div>
+      </div>
       <label>หมวดงาน</label><select id="pCategory">${catOpts}</select>
       <label>ชื่อสินค้า/ผลิตภัณฑ์ *</label><input id="pName" placeholder="เช่น กระเบื้องยาง SPC รุ่น...">
       <label>ราคา (บาท, ไม่บังคับ) — แอดมินเห็นเท่านั้น</label><input id="pPrice" type="number" min="0" step="0.01" placeholder="0.00">
@@ -923,8 +959,8 @@ function editMyProduct(id){
   VENDOR_STATE.editingProductId = id;
   VENDOR_STATE.companyName = p.companyName || VENDOR_STATE.companyName;
   VENDOR_STATE.companyPhone = p.companyPhone || VENDOR_STATE.companyPhone;
-  const vCompanyEl = document.getElementById('vCompany'); if(vCompanyEl) vCompanyEl.value = VENDOR_STATE.companyName;
-  const vPhoneEl = document.getElementById('vPhone'); if(vPhoneEl) vPhoneEl.value = VENDOR_STATE.companyPhone;
+  const pCompanyEl = document.getElementById('pCompany'); if(pCompanyEl) pCompanyEl.value = VENDOR_STATE.companyName;
+  const pPhoneEl = document.getElementById('pPhone'); if(pPhoneEl) pPhoneEl.value = VENDOR_STATE.companyPhone;
   document.getElementById('pCategory').value = p.categoryId||'';
   document.getElementById('pName').value = p.productName||'';
   document.getElementById('pPrice').value = p.price!=null?p.price:'';
@@ -935,7 +971,8 @@ function editMyProduct(id){
 }
 
 async function submitProduct(){
-  const phone = requirePhone(); if(!phone) return;
+  const companyName = (document.getElementById('pCompany').value||'').trim();
+  const companyPhone = (document.getElementById('pPhone').value||'').trim();
   const categoryId = document.getElementById('pCategory').value;
   const productName = document.getElementById('pName').value.trim();
   const priceVal = parseFloat(document.getElementById('pPrice').value);
@@ -943,6 +980,7 @@ async function submitProduct(){
   const fileInput = document.getElementById('pFile');
   const btn = document.getElementById('submitProdBtn');
   const msg = document.getElementById('submitProdMsg');
+  if(!companyName || !normPhone(companyPhone)){ msg.style.color='var(--flame)'; msg.textContent='กรุณากรอกชื่อบริษัทและเบอร์ติดต่อก่อน'; return; }
   if(!productName){ msg.style.color='var(--flame)'; msg.textContent='กรุณากรอกชื่อสินค้า'; return; }
   btn.disabled = true; btn.textContent = 'กำลังบันทึก…'; msg.textContent='';
   try{
@@ -959,8 +997,8 @@ async function submitProduct(){
       fileURL = uploaded.url; fileName = uploaded.name;
       btn.textContent = 'กำลังบันทึก…';
     }
-    const companyName = VENDOR_STATE.companyName.trim();
-    const companyPhone = VENDOR_STATE.companyPhone.trim();
+    VENDOR_STATE.companyName = companyName;
+    VENDOR_STATE.companyPhone = companyPhone;
     const payload = {
       companyName, companyPhone, productName, categoryId, price: isNaN(priceVal)?null:priceVal, description, fileURL, fileName,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: isEdit
