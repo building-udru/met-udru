@@ -458,7 +458,9 @@ async function toggleQuotes(jobId){
         return `<div class="bid-item-row ${isLowest?'lowest':''}">
           <span class="lp">${escapeHtml(catName(it.categoryId))} — ${escapeHtml(it.name)}${bid.product?' · เสนอ: '+escapeHtml(bid.product):''}</span>
           <span class="rp">${bid.price!=null?fmtBaht(bid.price):'-'}${isLowest?' <span class=\"badge badge-lowest\">ต่ำสุด</span>':''}</span>
-        </div>`;
+        </div>
+        ${bid.note?`<div class="quote-note" style="margin:2px 0 6px;">รายละเอียด: ${escapeHtml(bid.note)}</div>`:''}
+        ${bid.fileURL?`<div class="quote-file" style="margin-bottom:6px;">📎 <a href="${bid.fileURL}" target="_blank" rel="noopener">${escapeHtml(bid.fileName||'เอกสารแนบ')}</a></div>`:''}`;
       }).join('') || '<div class="hint">ไม่มีรายการที่เสนอราคา</div>';
       return `<div class="bid-card">
         <div class="bid-card-top">
@@ -469,8 +471,6 @@ async function toggleQuotes(jobId){
           <span class="hint" style="margin:0;">ส่งล่าสุด ${fmtDate(b.updatedAt||b.submittedAt)}</span>
         </div>
         ${rows}
-        ${b.note?`<div class="quote-note">รายละเอียดเพิ่มเติม: ${escapeHtml(b.note)}</div>`:''}
-        ${b.fileURL?`<div class="quote-file">📎 <a href="${b.fileURL}" target="_blank" rel="noopener">${escapeHtml(b.fileName||'เอกสารแนบ')}</a></div>`:''}
       </div>`;
     }).join('')}
   </div>`;
@@ -728,22 +728,16 @@ function drawVendorJobDetailBody(){
               <div><label style="margin-top:0;">ผลิตภัณฑ์/ยี่ห้อที่เสนอ</label><input id="bidprod_${it.id}" placeholder="เช่น กระเบื้อง Cotto รุ่น..." value="${prev?escapeHtml(prev.product||''):''}"></div>
               <div><label style="margin-top:0;">ราคา (บาท) — แอดมินเห็นเท่านั้น</label><input id="bidprice_${it.id}" type="number" min="0" step="0.01" placeholder="0.00" value="${prev&&prev.price!=null?prev.price:''}"></div>
             </div>
+            <label>รายละเอียดเพิ่มเติม (ไม่บังคับ)</label>
+            <textarea id="biditemnote_${it.id}" placeholder="เงื่อนไข ระยะเวลาส่งมอบ ฯลฯ">${prev?escapeHtml(prev.note||''):''}</textarea>
+            <label>แนบไฟล์ใบเสนอราคา (แอดมินเห็นเท่านั้น)</label>
+            <input id="biditemfile_${it.id}" type="file" accept=".pdf,image/*">
+            ${prev&&prev.fileURL?`<div class="quote-file">มีไฟล์เดิมอยู่แล้ว (แนบไฟล์ใหม่เพื่อแทนที่): <a href="${prev.fileURL}" target="_blank" rel="noopener">${escapeHtml(prev.fileName||'ไฟล์')}</a></div>`:''}
             <button class="btn btn-primary btn-item-submit" id="itembtn_${it.id}" onclick="submitItemBid('${VENDOR_STATE.activeJobId}','${it.id}')">${prev?'แก้ไข/ส่งราคารายการนี้อีกครั้ง':'ส่งใบเสนอราคารายการนี้'}</button>
             <div class="item-submit-msg" id="itemmsg_${it.id}"></div>
           </div>`;
         }).join('')}
       `).join('') || '<div class="hint">โครงการนี้ยังไม่มีรายการสเปค</div>'}
-    </div>
-    <div class="card">
-      <span class="eyebrow">รายละเอียดเพิ่มเติม (ไม่บังคับ)</span>
-      <p class="hint" style="margin-top:0;">ใช้สำหรับเงื่อนไข ระยะเวลาส่งมอบ หรือแนบไฟล์ใบเสนอราคารวม — แยกจากราคารายรายการด้านบน</p>
-      <label>รายละเอียดเพิ่มเติมของใบเสนอราคา</label>
-      <textarea id="bidNote" placeholder="เงื่อนไข ระยะเวลาส่งมอบ ฯลฯ">${existing?escapeHtml(existing.note||''):''}</textarea>
-      <label>แนบไฟล์ใบเสนอราคา (แอดมินเห็นเท่านั้น)</label>
-      <input id="bidFile" type="file" accept=".pdf,image/*">
-      ${existing&&existing.fileURL?`<div class="quote-file">มีไฟล์เดิมอยู่แล้ว (แนบไฟล์ใหม่เพื่อแทนที่)</div>`:''}
-      <button class="btn" style="width:100%;margin-top:16px;" id="submitBidExtraBtn" onclick="submitBidExtra('${VENDOR_STATE.activeJobId}')">บันทึกรายละเอียดเพิ่มเติม</button>
-      <div class="hint" id="submitBidExtraMsg" style="margin-top:10px;"></div>
     </div>`;
 }
 
@@ -752,11 +746,14 @@ async function submitItemBid(jobId, itemId){
   const phone = requirePhone(); if(!phone) return;
   const prodEl = document.getElementById('bidprod_'+itemId);
   const priceEl = document.getElementById('bidprice_'+itemId);
+  const noteEl = document.getElementById('biditemnote_'+itemId);
+  const fileEl = document.getElementById('biditemfile_'+itemId);
   const btn = document.getElementById('itembtn_'+itemId);
   const msg = document.getElementById('itemmsg_'+itemId);
   const card = document.getElementById('itemcard_'+itemId);
   const priceVal = priceEl ? parseFloat(priceEl.value) : NaN;
   const prodVal = prodEl ? prodEl.value.trim() : '';
+  const noteVal = noteEl ? noteEl.value.trim() : '';
   if(isNaN(priceVal) && !prodVal){
     msg.style.color='var(--flame)'; msg.textContent='กรุณากรอกผลิตภัณฑ์หรือราคาก่อนส่ง';
     return;
@@ -764,15 +761,26 @@ async function submitItemBid(jobId, itemId){
   const prevBtnText = btn.textContent;
   btn.disabled = true; btn.textContent = 'กำลังส่ง…'; msg.style.color='var(--ink-soft)'; msg.textContent='';
 
-  const entry = { product: prodVal };
-  if(!isNaN(priceVal)) entry.price = priceVal;
-
   const quoteId = jobId+'_'+phone;
   const quoteRef = db.collection('quotes').doc(quoteId);
   const pubRef = db.collection('publicBids').doc(quoteId);
   try{
     const existing = await quoteRef.get();
     const wasEdit = existing.exists;
+    const prevEntry = wasEdit ? ((existing.data().bids||{})[itemId] || {}) : {};
+    let fileURL = prevEntry.fileURL || null;
+    let fileName = prevEntry.fileName || null;
+    const file = fileEl && fileEl.files[0];
+    if(file){
+      btn.textContent = 'กำลังอัปโหลดไฟล์แนบ…';
+      const uploaded = await uploadToCloudinary(file, `quotes/${jobId}/${itemId}`);
+      fileURL = uploaded.url; fileName = uploaded.name;
+      btn.textContent = 'กำลังส่ง…';
+    }
+
+    const entry = { product: prodVal, note: noteVal, fileURL, fileName };
+    if(!isNaN(priceVal)) entry.price = priceVal;
+
     const payload = {
       jobId, companyName: VENDOR_STATE.companyName.trim(), companyPhone: VENDOR_STATE.companyPhone.trim(),
       bids: { [itemId]: entry },
@@ -804,58 +812,6 @@ async function submitItemBid(jobId, itemId){
   }
 }
 
-/* บันทึกรายละเอียดเพิ่มเติม/ไฟล์แนบของใบเสนอราคา — แยกจากราคารายรายการ */
-async function submitBidExtra(jobId){
-  const phone = requirePhone(); if(!phone) return;
-  const btn = document.getElementById('submitBidExtraBtn');
-  const msg = document.getElementById('submitBidExtraMsg');
-  const note = document.getElementById('bidNote').value.trim();
-  const fileInput = document.getElementById('bidFile');
-  btn.disabled = true; btn.textContent = 'กำลังบันทึก…'; msg.textContent='';
-
-  const quoteId = jobId+'_'+phone;
-  const quoteRef = db.collection('quotes').doc(quoteId);
-  const pubRef = db.collection('publicBids').doc(quoteId);
-  try{
-    const existing = await quoteRef.get();
-    const wasEdit = existing.exists;
-    let fileURL = existing.exists ? existing.data().fileURL||null : null;
-    let fileName = existing.exists ? existing.data().fileName||null : null;
-    const file = fileInput.files[0];
-    if(file){
-      btn.textContent = 'กำลังอัปโหลดไฟล์แนบ…';
-      const uploaded = await uploadToCloudinary(file, `quotes/${jobId}`);
-      fileURL = uploaded.url; fileName = uploaded.name;
-      btn.textContent = 'กำลังบันทึก…';
-    }
-    const payload = {
-      jobId, companyName: VENDOR_STATE.companyName.trim(), companyPhone: VENDOR_STATE.companyPhone.trim(),
-      note, fileURL, fileName,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: wasEdit
-    };
-    if(wasEdit){ payload.firstSubmittedAt = existing.data().firstSubmittedAt || existing.data().submittedAt || firebase.firestore.FieldValue.serverTimestamp(); }
-    else { payload.submittedAt = firebase.firestore.FieldValue.serverTimestamp(); payload.firstSubmittedAt = firebase.firestore.FieldValue.serverTimestamp(); }
-    await quoteRef.set(payload, {merge:true});
-
-    await pubRef.set({
-      jobId, companyName: VENDOR_STATE.companyName.trim(), companyPhone: VENDOR_STATE.companyPhone.trim(),
-      note, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: wasEdit,
-      submittedAt: payload.firstSubmittedAt || firebase.firestore.FieldValue.serverTimestamp()
-    }, {merge:true});
-
-    msg.style.color='var(--ok)'; msg.textContent = '✓ บันทึกรายละเอียดเพิ่มเติมแล้ว';
-    toast('บันทึกรายละเอียดแล้ว');
-    if(!VENDOR_STATE.existingBid) VENDOR_STATE.existingBid = {};
-    VENDOR_STATE.existingBid.note = note;
-    VENDOR_STATE.existingBid.fileURL = fileURL;
-    VENDOR_STATE.existingBid.fileName = fileName;
-  }catch(e){
-    msg.style.color='var(--flame)'; msg.textContent = 'เกิดข้อผิดพลาด: ' + (e.message||e);
-  }finally{
-    btn.disabled = false; btn.textContent = 'บันทึกรายละเอียดเพิ่มเติม';
-  }
-}
-
 /* ---- Data tab: free product submission (ไม่ผูกกับโครงการ, ตามหมวดงาน) ---- */
 function vendorDataTabHtml(){
   const catOpts = VENDOR_STATE.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
@@ -873,14 +829,14 @@ function vendorDataTabHtml(){
     </div>
     <div class="card">
       <span class="eyebrow">ค้นหาสินค้าที่เคยส่ง (ดูราคาของตัวเองได้)</span>
-      <p class="hint" style="margin-top:0;">กรอกอย่างน้อยหนึ่งช่อง — ค้นหาจากชื่อบริษัท เบอร์โทร หรือชื่อผลิตภัณฑ์ก็ได้</p>
+      <p class="hint" style="margin-top:0;">ค้นหาจากชื่อบริษัท เบอร์โทร หรือชื่อผลิตภัณฑ์ — กรอกอย่างน้อยหนึ่งช่อง</p>
       <div class="row">
-        <div><label style="margin-top:0;">ชื่อบริษัท</label><input id="searchCompanyName" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName)}"></div>
-        <div><label style="margin-top:0;">เบอร์โทร</label><input id="searchCompanyPhone" placeholder="08x-xxx-xxxx" value="${escapeHtml(VENDOR_STATE.companyPhone)}"></div>
+        <div><label style="margin-top:0;">ชื่อบริษัท</label><input id="searchCompany" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName)}"></div>
+        <div><label style="margin-top:0;">เบอร์ติดต่อ</label><input id="searchPhone" placeholder="08x-xxx-xxxx" value="${escapeHtml(VENDOR_STATE.companyPhone)}"></div>
       </div>
-      <label>ค้นหาจากชื่อผลิตภัณฑ์</label><input id="searchProductName" placeholder="เช่น กระเบื้องยาง">
-      <button class="btn btn-primary btn-sm" style="width:100%;margin-top:14px;" onclick="loadMyProducts()">ค้นหา</button>
-      <div id="myProductsList" class="hint" style="margin-top:14px;">กรอกข้อมูลด้านบน แล้วกด “ค้นหา” เพื่อดูและแก้ไขรายการที่เคยส่ง</div>
+      <label>ชื่อผลิตภัณฑ์</label><input id="searchProductName" placeholder="พิมพ์ชื่อผลิตภัณฑ์ที่ต้องการค้นหา">
+      <button class="btn btn-primary btn-sm" style="margin-top:14px;" onclick="loadMyProducts()">ค้นหา</button>
+      <div id="myProductsList" class="hint" style="margin-top:10px;">กรอกข้อมูลด้านบน แล้วกด “ค้นหา” เพื่อดูและแก้ไขรายการที่เคยส่ง</div>
     </div>
     <div class="card">
       <span class="eyebrow">คลังสินค้าทั้งหมด (มองเห็นได้ทุกบริษัท ไม่แสดงราคา)</span>
@@ -918,38 +874,51 @@ function drawVendorCatalog(){
 }
 
 async function loadMyProducts(){
+  const companyQuery = (document.getElementById('searchCompany').value||'').trim();
+  const phoneQuery = (document.getElementById('searchPhone').value||'').trim();
+  const nameQuery = (document.getElementById('searchProductName').value||'').trim().toLowerCase();
+  if(!companyQuery && !phoneQuery && !nameQuery){
+    toast('กรุณากรอกชื่อบริษัท เบอร์โทร หรือชื่อผลิตภัณฑ์อย่างน้อยหนึ่งช่อง');
+    return;
+  }
   const el = document.getElementById('myProductsList');
-  const nameQ = (document.getElementById('searchCompanyName')?.value||'').trim().toLowerCase();
-  const phoneQ = normPhone(document.getElementById('searchCompanyPhone')?.value||'');
-  const prodQ = (document.getElementById('searchProductName')?.value||'').trim().toLowerCase();
-  if(!nameQ && !phoneQ && !prodQ){ toast('กรุณากรอกชื่อบริษัท เบอร์โทร หรือชื่อผลิตภัณฑ์อย่างน้อยหนึ่งช่อง'); return; }
   el.innerHTML = 'กำลังค้นหา…';
-  const snap = await db.collection('products').get().catch(()=>null);
-  const all = snap ? snap.docs.map(d=>({id:d.id, ...d.data()})) : [];
-  const filtered = all.filter(p=>{
-    if(phoneQ && normPhone(p.companyPhone)!==phoneQ) return false;
-    if(nameQ && !(p.companyName||'').toLowerCase().includes(nameQ)) return false;
-    if(prodQ && !(p.productName||'').toLowerCase().includes(prodQ)) return false;
-    return true;
-  });
-  VENDOR_STATE.myProducts = filtered;
-  if(filtered.length===0){ el.innerHTML = 'ไม่พบสินค้าที่ตรงกับเงื่อนไขที่ค้นหา'; return; }
-  el.innerHTML = filtered.map(p=>`
+  let list = [];
+  try{
+    if(phoneQuery){
+      const snap = await db.collection('products').where('companyPhone','==', phoneQuery).get();
+      list = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    } else {
+      const snap = await db.collection('products').get();
+      list = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    }
+    if(companyQuery){
+      const cLower = companyQuery.toLowerCase();
+      list = list.filter(p=>(p.companyName||'').toLowerCase().includes(cLower));
+    }
+    if(nameQuery){
+      list = list.filter(p=>(p.productName||'').toLowerCase().includes(nameQuery));
+    }
+  }catch(e){
+    el.innerHTML = 'เกิดข้อผิดพลาดในการค้นหา: ' + (e.message||e);
+    return;
+  }
+  VENDOR_STATE.myProducts = list;
+  if(list.length===0){ el.innerHTML = 'ไม่พบรายการที่ตรงกับการค้นหา'; return; }
+  el.innerHTML = list.map(p=>`
     <div class="prod-card">
-      <div class="prod-top">
-        <span class="quote-company" style="font-weight:700;">${escapeHtml(p.productName)}</span>
-        <span class="badge badge-cat">${escapeHtml(vCatName(p.categoryId))}</span>
-        <span class="prod-price">${p.price!=null?fmtBaht(p.price):'-'}</span>
-      </div>
-      <div class="quote-note">${escapeHtml(p.companyName)} · โทร ${escapeHtml(p.companyPhone)}</div>
-      ${p.description?`<div class="quote-note">${escapeHtml(p.description)}</div>`:''}
-      ${p.fileURL?`<div class="quote-file">📎 <a href="${p.fileURL}" target="_blank" rel="noopener">${escapeHtml(p.fileName||'เอกสารแนบ/รูปภาพ')}</a></div>`:''}
+      <div class="prod-top"><span class="quote-company" style="font-weight:700;">${escapeHtml(p.productName)}</span><span class="prod-price">${p.price!=null?fmtBaht(p.price):'-'}</span></div>
+      <div class="quote-note">${escapeHtml(vCatName(p.categoryId))} · ${escapeHtml(p.companyName)}</div>
       <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="editMyProduct('${p.id}')">แก้ไขรายการนี้</button>
     </div>`).join('');
 }
 function editMyProduct(id){
   const p = VENDOR_STATE.myProducts.find(p=>p.id===id); if(!p) return;
   VENDOR_STATE.editingProductId = id;
+  VENDOR_STATE.companyName = p.companyName || VENDOR_STATE.companyName;
+  VENDOR_STATE.companyPhone = p.companyPhone || VENDOR_STATE.companyPhone;
+  const vCompanyEl = document.getElementById('vCompany'); if(vCompanyEl) vCompanyEl.value = VENDOR_STATE.companyName;
+  const vPhoneEl = document.getElementById('vPhone'); if(vPhoneEl) vPhoneEl.value = VENDOR_STATE.companyPhone;
   document.getElementById('pCategory').value = p.categoryId||'';
   document.getElementById('pName').value = p.productName||'';
   document.getElementById('pPrice').value = p.price!=null?p.price:'';
