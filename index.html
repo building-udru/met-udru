@@ -3,152 +3,169 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ระบบกลางเสนอราคางานก่อสร้าง</title>
+<title>ระบบเสนอราคางานก่อสร้าง — กองอาคารและสถานที่ UDRU</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0f2340;        /* navy - structure/blueprint */
-    --ink-soft:#33507a;
-    --paper:#f6f4ee;      /* warm drafting paper */
-    --paper-2:#eeeae0;
-    --line:#c9c2b2;
-    --safety:#e0631e;     /* safety-orange accent */
-    --safety-deep:#b84e14;
-    --ok:#2f7a4f;
-    --ok-bg:#e6f2ea;
-    --warn:#a8710a;
-    --warn-bg:#faf0dd;
-    --white:#fffdf9;
-    --shadow: 0 1px 0 rgba(15,35,64,.06);
+    --bg:#0a1613;          /* deep green-black — UDRU green, executed dark & modern */
+    --bg-2:#101f1a;        /* card surface */
+    --bg-3:#16281f;        /* elevated / hover */
+    --line: rgba(200,227,94,.14);
+    --line-soft: rgba(255,255,255,.07);
+    --ink:#eef7f1;
+    --ink-soft:#93ab9f;
+    --ink-dim:#5f7267;
+    --lime:#c8e35c;        /* primary accent — fresh, vivid, still reads UDRU green/yellow */
+    --lime-deep:#a3c93e;
+    --lime-ink:#12210e;    /* dark text on lime buttons */
+    --gold:#f2c14e;        /* secondary accent — UDRU yellow, warm */
+    --flame:#ff7a59;       /* alert / danger — modern coral, echoes ดอกจาน */
+    --ok:#6fe3a0;
+    --ok-bg: rgba(111,227,160,.12);
+    --warn:#f2c14e;
+    --warn-bg: rgba(242,193,78,.12);
+    --white:#fffefb;
+    --radius:16px;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
     background:
-      linear-gradient(var(--paper) 0, var(--paper) 100%),
-      repeating-linear-gradient(0deg, rgba(15,35,64,.035) 0 1px, transparent 1px 28px),
-      repeating-linear-gradient(90deg, rgba(15,35,64,.035) 0 1px, transparent 1px 28px);
+      radial-gradient(900px 500px at 88% -8%, rgba(200,227,94,.10), transparent 60%),
+      radial-gradient(700px 500px at -10% 100%, rgba(242,193,78,.07), transparent 55%),
+      var(--bg);
     color:var(--ink);
-    font-family:'Sarabun',sans-serif;
+    font-family:'Anuphan',sans-serif;
     min-height:100vh;
+    -webkit-font-smoothing:antialiased;
   }
-  h1,h2,h3,.disp{font-family:'Kanit',sans-serif;}
+  h1,h2,h3,.disp{font-family:'Anuphan',sans-serif;letter-spacing:-.01em;}
   .mono{font-family:'JetBrains Mono',monospace;}
-  a{color:var(--safety-deep);}
+  a{color:var(--lime);}
 
   .topbar{
     display:flex;align-items:center;justify-content:space-between;
-    padding:18px 28px;border-bottom:2px solid var(--ink);
-    background:var(--white);
+    padding:16px 28px;position:sticky;top:0;z-index:30;
+    background:rgba(10,22,19,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line-soft);
   }
-  .brand{display:flex;align-items:center;gap:12px;}
+  .brand{display:flex;align-items:center;gap:13px;}
   .brand .mark{
-    width:34px;height:34px;border:2.5px solid var(--ink);border-radius:4px;
-    display:flex;align-items:center;justify-content:center;color:var(--safety);
-    font-family:'Kanit';font-weight:700;font-size:15px;flex:none;
-    background:repeating-linear-gradient(45deg, transparent 0 4px, rgba(15,35,64,.08) 4px 5px);
+    width:38px;height:38px;border-radius:11px;
+    display:flex;align-items:center;justify-content:center;color:var(--lime-ink);
+    font-family:'Anuphan';font-weight:800;font-size:14px;flex:none;letter-spacing:-.02em;
+    background:linear-gradient(150deg, var(--lime), var(--gold));
+    box-shadow:0 0 0 1px rgba(200,227,94,.25), 0 6px 18px -6px rgba(200,227,94,.45);
   }
-  .brand h1{font-size:18px;margin:0;font-weight:600;letter-spacing:.2px;}
-  .brand .sub{font-size:12px;color:var(--ink-soft);margin-top:1px;}
-  .wrap{max-width:1080px;margin:0 auto;padding:28px;}
+  .brand h1{font-size:17px;margin:0;font-weight:700;letter-spacing:-.01em;color:var(--white);}
+  .brand .sub{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 28px;}
 
   .btn{
-    font-family:'Sarabun';font-weight:600;font-size:14.5px;
-    border:2px solid var(--ink);background:var(--white);color:var(--ink);
-    padding:9px 16px;border-radius:6px;cursor:pointer;transition:transform .1s;
+    font-family:'Anuphan';font-weight:600;font-size:14.5px;
+    border:1px solid var(--line-soft);background:var(--bg-3);color:var(--ink);
+    padding:10px 18px;border-radius:999px;cursor:pointer;transition:transform .12s, filter .12s;
   }
-  .btn:hover{transform:translateY(-1px);}
+  .btn:hover{transform:translateY(-1px);filter:brightness(1.08);}
   .btn:active{transform:translateY(0);}
-  .btn-primary{background:var(--safety);border-color:var(--safety-deep);color:#fff;}
-  .btn-primary:hover{background:var(--safety-deep);}
-  .btn-ghost{border-color:var(--line);color:var(--ink-soft);}
-  .btn-danger{border-color:#8a2c2c;color:#8a2c2c;background:#fff;}
-  .btn-sm{padding:6px 11px;font-size:13px;border-radius:5px;}
-  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  .btn-primary{background:linear-gradient(120deg, var(--lime), var(--gold));border-color:transparent;color:var(--lime-ink);font-weight:700;}
+  .btn-primary:hover{filter:brightness(1.06);}
+  .btn-ghost{background:transparent;border-color:var(--line-soft);color:var(--ink-soft);}
+  .btn-danger{border-color:rgba(255,122,89,.4);color:var(--flame);background:rgba(255,122,89,.08);}
+  .btn-sm{padding:7px 14px;font-size:13px;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
 
   .card{
-    background:var(--white);border:1.5px solid var(--ink);border-radius:8px;
-    padding:20px;margin-bottom:18px;box-shadow:var(--shadow);
+    background:var(--bg-2);border:1px solid var(--line-soft);border-radius:var(--radius);
+    padding:22px;margin-bottom:16px;
   }
   .eyebrow{
-    font-family:'JetBrains Mono';font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
-    color:var(--safety-deep);font-weight:600;margin-bottom:6px;display:block;
+    font-family:'JetBrains Mono';font-size:11px;letter-spacing:1.6px;text-transform:uppercase;
+    color:var(--lime);font-weight:600;margin-bottom:8px;display:block;
   }
-  label{display:block;font-size:13.5px;font-weight:600;color:var(--ink-soft);margin:14px 0 5px;}
+  label{display:block;font-size:13.5px;font-weight:600;color:var(--ink-soft);margin:14px 0 6px;}
   label:first-child{margin-top:0;}
   input,textarea,select{
-    width:100%;font-family:'Sarabun';font-size:15px;padding:10px 12px;
-    border:1.5px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);
+    width:100%;font-family:'Anuphan';font-size:15px;padding:11px 13px;
+    border:1px solid var(--line-soft);border-radius:10px;background:var(--bg-3);color:var(--ink);
   }
-  input:focus,textarea:focus,select:focus{outline:2px solid var(--safety);outline-offset:1px;border-color:var(--safety);}
+  input::placeholder,textarea::placeholder{color:var(--ink-dim);}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--lime);box-shadow:0 0 0 3px rgba(200,227,94,.15);}
   textarea{resize:vertical;min-height:70px;}
-  .hint{font-size:12px;color:#7a7360;margin-top:4px;}
+  .hint{font-size:12px;color:var(--ink-dim);margin-top:5px;}
   .row{display:flex;gap:12px;}
   .row>*{flex:1;}
 
   .badge{
     display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;
-    padding:3px 9px;border-radius:20px;font-family:'JetBrains Mono';
+    padding:3px 10px;border-radius:20px;font-family:'JetBrains Mono';
   }
   .badge-open{background:var(--ok-bg);color:var(--ok);}
-  .badge-closed{background:#efe9df;color:#8a8370;}
+  .badge-closed{background:rgba(255,255,255,.06);color:var(--ink-dim);}
   .badge-edited{background:var(--warn-bg);color:var(--warn);}
 
   .cat-chip{
-    display:inline-block;padding:5px 12px;border:1.5px solid var(--ink);border-radius:20px;
-    font-size:13px;font-weight:600;margin:0 6px 6px 0;cursor:pointer;background:var(--white);
+    display:inline-block;padding:6px 14px;border:1px solid var(--line-soft);border-radius:999px;
+    font-size:13px;font-weight:600;margin:0 6px 6px 0;cursor:pointer;background:var(--bg-3);color:var(--ink-soft);
+    transition:border-color .12s, color .12s;
   }
-  .cat-chip.active{background:var(--ink);color:var(--white);}
+  .cat-chip.active{background:var(--lime);border-color:var(--lime);color:var(--lime-ink);}
 
   .job-row{
     display:flex;justify-content:space-between;align-items:center;gap:14px;
-    padding:14px 0;border-top:1px dashed var(--line);
+    padding:16px 0;border-top:1px solid var(--line-soft);
   }
   .job-row:first-child{border-top:none;}
-  .job-title{font-weight:600;font-size:15.5px;}
-  .job-meta{font-size:12.5px;color:var(--ink-soft);margin-top:3px;}
+  .job-title{font-weight:700;font-size:15.5px;color:var(--white);}
+  .job-meta{font-size:12.5px;color:var(--ink-soft);margin-top:4px;}
   .job-actions{display:flex;gap:8px;flex:none;flex-wrap:wrap;justify-content:flex-end;}
 
-  .quote-item{border-top:1px solid var(--paper-2);padding:12px 0;}
+  .quote-item{border-top:1px solid var(--line-soft);padding:13px 0;}
   .quote-item:first-child{border-top:none;}
   .quote-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;}
-  .quote-company{font-weight:700;}
-  .quote-price{font-family:'JetBrains Mono';font-size:18px;font-weight:600;color:var(--safety-deep);}
+  .quote-company{font-weight:700;color:var(--white);}
+  .quote-price{font-family:'JetBrains Mono';font-size:18px;font-weight:700;color:var(--gold);}
   .quote-note{font-size:13.5px;color:var(--ink-soft);margin-top:4px;}
   .quote-file{font-size:13px;margin-top:6px;}
-  .lowest{outline:2px solid var(--ok);outline-offset:3px;border-radius:6px;}
+  .lowest{
+    position:relative;padding-left:14px;
+    border-left:3px solid var(--lime);
+    background:linear-gradient(90deg, rgba(200,227,94,.08), transparent 40%);
+    border-radius:0 10px 10px 0;
+  }
 
-  .empty{text-align:center;padding:36px 20px;color:#8a8370;}
-  .empty .disp{font-size:16px;color:var(--ink-soft);margin-bottom:4px;}
+  .empty{text-align:center;padding:40px 20px;color:var(--ink-dim);}
+  .empty .disp{font-size:16px;color:var(--ink-soft);margin-bottom:4px;font-weight:600;}
 
   .gate{max-width:380px;margin:12vh auto;text-align:center;}
-  .gate .mark{width:52px;height:52px;margin:0 auto 18px;}
+  .gate .mark{width:52px;height:52px;margin:0 auto 18px;font-size:16px;border-radius:16px;}
 
   .toast{
     position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
-    background:var(--ink);color:#fff;padding:12px 20px;border-radius:8px;
-    font-size:14px;font-weight:600;z-index:50;box-shadow:0 6px 20px rgba(15,35,64,.25);
+    background:var(--bg-3);color:var(--ink);padding:12px 22px;border-radius:999px;
+    border:1px solid var(--line-soft);
+    font-size:14px;font-weight:600;z-index:50;box-shadow:0 12px 30px -8px rgba(0,0,0,.5);
     opacity:0;pointer-events:none;transition:opacity .25s, bottom .25s;
   }
   .toast.show{opacity:1;bottom:32px;}
 
   .modal-bg{
-    position:fixed;inset:0;background:rgba(15,35,64,.45);display:flex;
+    position:fixed;inset:0;background:rgba(5,12,10,.6);backdrop-filter:blur(3px);display:flex;
     align-items:center;justify-content:center;z-index:40;padding:20px;
   }
-  .modal{background:var(--white);border:2px solid var(--ink);border-radius:10px;padding:24px;max-width:460px;width:100%;max-height:88vh;overflow:auto;}
+  .modal{background:var(--bg-2);border:1px solid var(--line-soft);border-radius:var(--radius);padding:26px;max-width:460px;width:100%;max-height:88vh;overflow:auto;}
 
   .link-box{
-    display:flex;gap:8px;background:var(--paper);border:1.5px dashed var(--line);
-    border-radius:6px;padding:8px 10px;align-items:center;margin-top:8px;
+    display:flex;gap:8px;background:var(--bg-3);border:1px dashed var(--line);
+    border-radius:10px;padding:9px 11px;align-items:center;margin-top:9px;
   }
-  .link-box input{border:none;background:transparent;font-family:'JetBrains Mono';font-size:12.5px;padding:2px;}
+  .link-box input{border:none;background:transparent;font-family:'JetBrains Mono';font-size:12.5px;padding:2px;color:var(--ink-soft);}
 
   .status-line{font-size:13px;color:var(--ink-soft);margin-top:10px;}
-  footer{text-align:center;font-size:12px;color:#a39c88;padding:30px 0 40px;}
+  footer{text-align:center;font-size:12px;color:var(--ink-dim);padding:30px 0 40px;}
   @media(max-width:640px){
-    .wrap{padding:16px;}
+    .wrap{padding:20px 16px;}
     .job-row{flex-direction:column;align-items:flex-start;}
     .job-actions{justify-content:flex-start;}
     .row{flex-direction:column;}
@@ -161,8 +178,8 @@
   <div class="brand">
     <div class="mark">MET</div>
     <div>
-      <h1>ระบบกลางเสนอราคางานก่อสร้าง</h1>
-      <div class="sub" id="topbarSub">MET‑UDRU</div>
+      <h1>ระบบเสนอราคางานก่อสร้าง</h1>
+      <div class="sub" id="topbarSub">กองอาคารและสถานที่ · UDRU</div>
     </div>
   </div>
   <div id="topbarActions"></div>
@@ -301,7 +318,7 @@ function renderLogin(){
       <label>รหัสผ่าน</label>
       <input id="loginPass" type="password" placeholder="••••••••">
       <button class="btn btn-primary" style="width:100%;margin-top:18px;" onclick="doLogin()">เข้าสู่ระบบ</button>
-      <div class="hint" id="loginErr" style="color:#a8362c;margin-top:10px;"></div>
+      <div class="hint" id="loginErr" style="color:var(--flame);margin-top:10px;"></div>
       <p class="hint" style="margin-top:16px;">สร้างบัญชีผู้ดูแลได้ที่ Firebase Console &gt; Authentication &gt; Sign-in method &gt; Email/Password</p>
     </div>
   `;
@@ -323,7 +340,7 @@ let ADMIN_STATE = { categories:[], jobs:[], activeCat:'all', quotesCache:{} };
 
 function renderAdmin(user){
   topbarActions.innerHTML = TEST_MODE_NO_LOGIN ? `
-    <span class="hint" style="margin:0;color:#a8710a;font-weight:600;">⚠ โหมดทดสอบ ไม่มีการล็อกอิน</span>
+    <span class="hint" style="margin:0;color:var(--warn);font-weight:600;">⚠ โหมดทดสอบ ไม่มีการล็อกอิน</span>
   ` : `
     <div style="display:flex;align-items:center;gap:12px;">
       <span class="hint" style="margin:0;">${escapeHtml(user.email)}</span>
@@ -553,7 +570,7 @@ async function renderPublicJob(jobId){
       <div class="card">
         <span class="eyebrow">${escapeHtml(catName)}</span>
         <h2 class="disp" style="margin:4px 0 0;">${escapeHtml(job.title)}</h2>
-        <p class="status-line" style="color:#a8362c;font-weight:600;">งานนี้ปิดรับใบเสนอราคาแล้ว</p>
+        <p class="status-line" style="color:var(--flame);font-weight:600;">งานนี้ปิดรับใบเสนอราคาแล้ว</p>
       </div>`;
     return;
   }
@@ -636,7 +653,7 @@ async function submitQuote(jobId){
 
   if(!company || !phone || isNaN(price)){
     msg.textContent = 'กรุณากรอกชื่อบริษัท เบอร์ติดต่อ และราคาให้ครบถ้วน';
-    msg.style.color = '#a8362c';
+    msg.style.color = 'var(--flame)';
     return;
   }
   btn.disabled = true; btn.textContent = 'กำลังส่ง…'; msg.textContent=''; msg.style.color='';
@@ -688,7 +705,7 @@ async function submitQuote(jobId){
     btn.textContent = 'ส่งราคาอีกครั้ง (แก้ไข)';
     loadPublicRoster(jobId);
   }catch(e){
-    msg.style.color = '#a8362c';
+    msg.style.color = 'var(--flame)';
     msg.textContent = 'เกิดข้อผิดพลาด: ' + (e.message||e);
   }finally{
     btn.disabled = false;
