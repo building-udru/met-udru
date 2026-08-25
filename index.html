@@ -711,6 +711,16 @@ async function lookupExistingBidFromPhone(jobId, phoneVal){
   }
 }
 
+/* เปิด/ปิดแผงรายละเอียดที่บริษัทอื่นเสนอในรายการนี้ */
+function toggleOffers(itemId){
+  const el = document.getElementById('offerspanel_'+itemId);
+  const btn = document.getElementById('offersbtn_'+itemId);
+  if(!el) return;
+  const willShow = el.style.display === 'none';
+  el.style.display = willShow ? 'block' : 'none';
+  if(btn) btn.textContent = btn.textContent.replace(willShow ? 'ดูข้อมูล' : 'ซ่อนข้อมูล', willShow ? 'ซ่อนข้อมูล' : 'ดูข้อมูล');
+}
+
 function vendorJobDetailHtml(){
   return `<div id="vendorJobDetailBody"><div class="empty">กำลังโหลดรายละเอียดโครงการ…</div></div>`;
 }
@@ -738,17 +748,21 @@ function drawVendorJobDetailBody(){
         <div class="spec-group-title">${escapeHtml(vCatName(cid))}</div>
         ${items.filter(i=>i.categoryId===cid).map(it=>{
           const prev = existing && existing.bids && existing.bids[it.id];
-          const offers = pub.filter(b=>b.bids && b.bids[it.id]).map(b=>{
+          const offerRows = pub.filter(b=>b.bids && b.bids[it.id]).map(b=>{
             const ob = b.bids[it.id];
-            let line = `<b>${escapeHtml(b.companyName)}</b> — ${escapeHtml(ob.product||'ไม่ระบุผลิตภัณฑ์')}`;
-            if(ob.note) line += `<br><span style="color:var(--ink-dim);">รายละเอียด: ${escapeHtml(ob.note)}</span>`;
-            return `<div style="margin-bottom:6px;">${line}</div>`;
+            return `<div class="bid-item-row">
+              <span class="lp"><b>${escapeHtml(b.companyName)}</b>${b.isEdited?' <span class="badge badge-edited">แก้ไขแล้ว</span>':''}${ob.product?' · เสนอ: '+escapeHtml(ob.product):''}</span>
+              <span class="rp">${ob.priceMask?ob.priceMask+' บาท':'-'}</span>
+            </div>
+            ${ob.note?`<div class="quote-note" style="margin:2px 0 6px;">รายละเอียด: ${escapeHtml(ob.note)}</div>`:''}
+            ${ob.hasFile?`<div class="quote-file" style="margin-bottom:6px;color:var(--ink-dim);">📎 มีไฟล์แนบ (แอดมินเห็นเท่านั้น)</div>`:''}`;
           });
           return `
           <div class="item-bid-input-group ${prev?'is-filled':''}" id="itemcard_${it.id}">
             <div class="item-title">${escapeHtml(it.name)}</div>
             <div class="item-detail">${[it.spec, it.unit?('หน่วย: '+it.unit):'', it.qty?('จำนวน: '+it.qty):''].filter(Boolean).join(' · ')||'-'}</div>
-            <div class="item-offers">${offers.length? '<b style="display:block;margin-bottom:6px;">บริษัทที่เสนอแล้ว:</b>'+offers.join('') : 'ยังไม่มีบริษัทเสนอรายการนี้'}</div>
+            ${offerRows.length ? `<button class="btn btn-ghost btn-sm" type="button" style="margin-bottom:14px;" onclick="toggleOffers('${it.id}')" id="offersbtn_${it.id}">ดูข้อมูลที่บริษัทอื่นเสนอ (${offerRows.length})</button>` : '<div class="hint" style="margin-bottom:14px;">ยังไม่มีบริษัทเสนอรายการนี้</div>'}
+            <div class="item-offers" id="offerspanel_${it.id}" style="display:none;">${offerRows.join('')}</div>
             <div class="row">
               <div><label style="margin-top:0;">ชื่อบริษัทของท่าน</label><input id="bidcompany_${it.id}" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName||'')}" oninput="syncCompanyField(this.value,'name')"></div>
               <div><label style="margin-top:0;">เบอร์ติดต่อ</label><input id="bidphone_${it.id}" placeholder="08x-xxx-xxxx" value="${escapeHtml(VENDOR_STATE.companyPhone||'')}" oninput="syncCompanyField(this.value,'phone')" onblur="lookupExistingBidFromPhone('${VENDOR_STATE.activeJobId}', this.value)"></div>
@@ -817,6 +831,7 @@ async function submitItemBid(jobId, itemId){
 
     const entry = { product: prodVal, note: noteVal, fileURL, fileName };
     if(!isNaN(priceVal)) entry.price = priceVal;
+    const priceMask = !isNaN(priceVal) ? 'X'.repeat(String(Math.trunc(Math.abs(priceVal))).length) : null;
 
     const payload = {
       jobId, companyName: companyVal, companyPhone: phoneRaw,
@@ -829,7 +844,7 @@ async function submitItemBid(jobId, itemId){
 
     await pubRef.set({
       jobId, companyName: companyVal, companyPhone: phoneRaw,
-      bids: { [itemId]: { product: entry.product || '', note: entry.note || '' } },
+      bids: { [itemId]: { product: entry.product || '', note: entry.note || '', priceMask, hasFile: !!fileURL } },
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: wasEdit,
       submittedAt: payload.firstSubmittedAt || firebase.firestore.FieldValue.serverTimestamp()
     }, {merge:true});
