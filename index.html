@@ -872,11 +872,15 @@ function vendorDataTabHtml(){
       <div class="hint" id="submitProdMsg" style="margin-top:10px;"></div>
     </div>
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span class="eyebrow" style="margin:0;">สินค้าที่เคยส่งด้วยเบอร์นี้ (ดูราคาของตัวเองได้)</span>
-        <button class="btn btn-ghost btn-sm" onclick="loadMyProducts()">ค้นหา</button>
+      <span class="eyebrow">ค้นหาสินค้าที่เคยส่ง (ดูราคาของตัวเองได้)</span>
+      <p class="hint" style="margin-top:0;">กรอกอย่างน้อยหนึ่งช่อง — ค้นหาจากชื่อบริษัท เบอร์โทร หรือชื่อผลิตภัณฑ์ก็ได้</p>
+      <div class="row">
+        <div><label style="margin-top:0;">ชื่อบริษัท</label><input id="searchCompanyName" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName)}"></div>
+        <div><label style="margin-top:0;">เบอร์โทร</label><input id="searchCompanyPhone" placeholder="08x-xxx-xxxx" value="${escapeHtml(VENDOR_STATE.companyPhone)}"></div>
       </div>
-      <div id="myProductsList" class="hint" style="margin-top:10px;">กรอกเบอร์ติดต่อด้านบน แล้วกด “ค้นหา” เพื่อดูและแก้ไขรายการที่เคยส่ง</div>
+      <label>ค้นหาจากชื่อผลิตภัณฑ์</label><input id="searchProductName" placeholder="เช่น กระเบื้องยาง">
+      <button class="btn btn-primary btn-sm" style="width:100%;margin-top:14px;" onclick="loadMyProducts()">ค้นหา</button>
+      <div id="myProductsList" class="hint" style="margin-top:14px;">กรอกข้อมูลด้านบน แล้วกด “ค้นหา” เพื่อดูและแก้ไขรายการที่เคยส่ง</div>
     </div>
     <div class="card">
       <span class="eyebrow">คลังสินค้าทั้งหมด (มองเห็นได้ทุกบริษัท ไม่แสดงราคา)</span>
@@ -914,16 +918,32 @@ function drawVendorCatalog(){
 }
 
 async function loadMyProducts(){
-  const phone = requirePhone(); if(!phone) return;
   const el = document.getElementById('myProductsList');
+  const nameQ = (document.getElementById('searchCompanyName')?.value||'').trim().toLowerCase();
+  const phoneQ = normPhone(document.getElementById('searchCompanyPhone')?.value||'');
+  const prodQ = (document.getElementById('searchProductName')?.value||'').trim().toLowerCase();
+  if(!nameQ && !phoneQ && !prodQ){ toast('กรุณากรอกชื่อบริษัท เบอร์โทร หรือชื่อผลิตภัณฑ์อย่างน้อยหนึ่งช่อง'); return; }
   el.innerHTML = 'กำลังค้นหา…';
-  const snap = await db.collection('products').where('companyPhone','==', VENDOR_STATE.companyPhone.trim()).get().catch(()=>null);
-  VENDOR_STATE.myProducts = snap ? snap.docs.map(d=>({id:d.id, ...d.data()})) : [];
-  if(VENDOR_STATE.myProducts.length===0){ el.innerHTML = 'ยังไม่พบสินค้าที่เคยส่งด้วยเบอร์นี้'; return; }
-  el.innerHTML = VENDOR_STATE.myProducts.map(p=>`
+  const snap = await db.collection('products').get().catch(()=>null);
+  const all = snap ? snap.docs.map(d=>({id:d.id, ...d.data()})) : [];
+  const filtered = all.filter(p=>{
+    if(phoneQ && normPhone(p.companyPhone)!==phoneQ) return false;
+    if(nameQ && !(p.companyName||'').toLowerCase().includes(nameQ)) return false;
+    if(prodQ && !(p.productName||'').toLowerCase().includes(prodQ)) return false;
+    return true;
+  });
+  VENDOR_STATE.myProducts = filtered;
+  if(filtered.length===0){ el.innerHTML = 'ไม่พบสินค้าที่ตรงกับเงื่อนไขที่ค้นหา'; return; }
+  el.innerHTML = filtered.map(p=>`
     <div class="prod-card">
-      <div class="prod-top"><span class="quote-company" style="font-weight:700;">${escapeHtml(p.productName)}</span><span class="prod-price">${p.price!=null?fmtBaht(p.price):'-'}</span></div>
-      <div class="quote-note">${escapeHtml(vCatName(p.categoryId))}</div>
+      <div class="prod-top">
+        <span class="quote-company" style="font-weight:700;">${escapeHtml(p.productName)}</span>
+        <span class="badge badge-cat">${escapeHtml(vCatName(p.categoryId))}</span>
+        <span class="prod-price">${p.price!=null?fmtBaht(p.price):'-'}</span>
+      </div>
+      <div class="quote-note">${escapeHtml(p.companyName)} · โทร ${escapeHtml(p.companyPhone)}</div>
+      ${p.description?`<div class="quote-note">${escapeHtml(p.description)}</div>`:''}
+      ${p.fileURL?`<div class="quote-file">📎 <a href="${p.fileURL}" target="_blank" rel="noopener">${escapeHtml(p.fileName||'เอกสารแนบ/รูปภาพ')}</a></div>`:''}
       <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="editMyProduct('${p.id}')">แก้ไขรายการนี้</button>
     </div>`).join('');
 }
