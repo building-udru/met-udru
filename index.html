@@ -74,6 +74,7 @@
   .badge-closed{background:#f1f2ee;color:var(--ink-dim);}
   .badge-edited{background:var(--warn-bg);color:var(--warn);}
   .badge-lowest{background:var(--ok-bg);color:var(--ok);}
+  .badge-cat{background:#eef1fb;color:#3a4b8a;}
 
   .cat-chip{display:inline-block;padding:6px 14px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:600;margin:0 6px 6px 0;cursor:pointer;background:var(--bg-3);color:var(--ink-soft);transition:border-color .12s, color .12s, background .12s;}
   .cat-chip.active{background:var(--ink);border-color:var(--ink);color:#fff;}
@@ -91,20 +92,18 @@
 
   .spec-group-title{font-weight:700;font-size:13.5px;color:var(--safety-deep);margin:16px 0 6px;font-family:'JetBrains Mono';letter-spacing:.3px;}
   .spec-group-title:first-child{margin-top:0;}
-  .spec-item-line{font-size:14px;color:var(--ink);padding:6px 0;border-top:1px solid var(--line-soft);}
-  .spec-item-line:first-child{border-top:none;}
-  .spec-item-name{font-weight:600;}
-  .spec-item-detail{color:var(--ink-soft);font-size:12.5px;}
 
   .spec-row{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--bg-3);}
   .spec-row .fields{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
   .spec-row .fields .full{grid-column:1/-1;}
-  .spec-row input{background:#fff;}
+  .spec-row input,.spec-row select{background:#fff;}
   .spec-row .rm{flex:none;}
 
   .item-bid-input-group{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:var(--bg-3);}
   .item-bid-input-group .item-title{font-weight:700;font-size:14.5px;margin-bottom:2px;}
   .item-bid-input-group .item-detail{font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;}
+  .item-offers{margin:6px 0 12px;padding:8px 10px;background:#fff;border:1px dashed var(--line);border-radius:10px;font-size:12.5px;color:var(--ink-soft);}
+  .item-offers b{color:var(--ink);}
 
   .bid-card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;}
   .bid-card-top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;}
@@ -211,7 +210,7 @@ const DEFAULT_CATEGORIES = [
   "งานครุภัณฑ์","งานตกแต่ง","งานฝ้าเพดาน","งานพื้น","งานภูมิทัศน์","งานหลังคา"
 ];
 
-/* โหมดทดสอบ: ข้ามหน้าล็อกอินแอดมิน ต้องปิดก่อนใช้งานจริง (พร้อมตั้ง Firestore Rules ให้รัดกุม) */
+/* โหมดทดสอบ: ข้ามหน้าล็อกอินแอดมิน ต้องปิดก่อนใช้งานจริง (พร้อมตั้ง Firestore Rules ให้รัดกุม — ดูหมายเหตุด้านล่างสุดของไฟล์) */
 const TEST_MODE_NO_LOGIN = true;
 
 const app = document.getElementById('app');
@@ -277,7 +276,7 @@ function doLogin(){
 /* =========================================================
    ADMIN: STATE + DASHBOARD SHELL
 ========================================================= */
-let ADMIN_STATE = { tab:'bid', categories:[], jobs:[], products:[], activeCat:'all', productFilter:'' };
+let ADMIN_STATE = { tab:'bid', categories:[], jobs:[], products:[], activeCat:'all', productFilter:'', productCat:'all' };
 
 function renderAdmin(user){
   topbarActions.innerHTML = TEST_MODE_NO_LOGIN ? `
@@ -340,14 +339,15 @@ function drawAdminTabContent(){
 function adminBidTabHtml(){
   const cats = ADMIN_STATE.categories;
   const activeCat = ADMIN_STATE.activeCat;
-  const jobs = ADMIN_STATE.jobs.filter(j => activeCat==='all' || j.categoryId===activeCat);
+  const jobHasCat = (j,catId) => (j.items||[]).some(it=>it.categoryId===catId);
+  const jobs = ADMIN_STATE.jobs.filter(j => activeCat==='all' || jobHasCat(j, activeCat));
   return `
     <div class="card">
       <span class="eyebrow">หมวดงาน</span>
       <div>
         <span class="cat-chip ${activeCat==='all'?'active':''}" onclick="setCat('all')">ทั้งหมด (${ADMIN_STATE.jobs.length})</span>
         ${cats.map(c=>{
-          const count = ADMIN_STATE.jobs.filter(j=>j.categoryId===c.id).length;
+          const count = ADMIN_STATE.jobs.filter(j=>jobHasCat(j,c.id)).length;
           return `<span class="cat-chip ${activeCat===c.id?'active':''}" onclick="setCat('${c.id}')">${escapeHtml(c.name)} (${count})</span>`;
         }).join('')}
         <span class="cat-chip" style="border-style:dashed;" onclick="promptNewCategory()">+ เพิ่มหมวดงาน</span>
@@ -365,7 +365,7 @@ function adminBidTabHtml(){
     </div>`;
 }
 function setCat(id){ ADMIN_STATE.activeCat = id; drawAdminTabContent(); }
-function catName(id){ const c = ADMIN_STATE.categories.find(c=>c.id===id); return c ? c.name : '-'; }
+function catName(id){ const c = ADMIN_STATE.categories.find(c=>c.id===id); return c ? c.name : 'ไม่ระบุหมวดงาน'; }
 
 function renderJobRow(j){
   const isOpen = j.status !== 'closed';
@@ -374,7 +374,7 @@ function renderJobRow(j){
     <div class="job-row">
       <div>
         <div class="job-title">${escapeHtml(j.title)} <span class="badge ${isOpen?'badge-open':'badge-closed'}">${isOpen?'เปิดรับ':'ปิดรับแล้ว'}</span></div>
-        <div class="job-meta">${escapeHtml(catName(j.categoryId))}${j.deadline? ' · กำหนดส่งภายใน ' + escapeHtml(j.deadline):''} · ${items.length} รายการสเปค · สร้างเมื่อ ${fmtDate(j.createdAt)}</div>
+        <div class="job-meta">${items.length} รายการสเปค${j.deadline? ' · กำหนดส่งภายใน ' + escapeHtml(j.deadline):''} · สร้างเมื่อ ${fmtDate(j.createdAt)}</div>
       </div>
       <div class="job-actions">
         <button class="btn btn-sm" onclick="toggleQuotes('${j.id}')">ดูราคาที่เสนอ</button>
@@ -393,9 +393,11 @@ async function toggleJobStatus(jobId, newStatus){
 }
 async function deleteJob(jobId){
   if(!confirm('ยืนยันลบโครงการนี้? ใบเสนอราคาทั้งหมดของโครงการนี้จะถูกลบด้วย')) return;
-  const qs = await db.collection('quotes').where('jobId','==',jobId).get();
   const batch = db.batch();
+  const qs = await db.collection('quotes').where('jobId','==',jobId).get();
   qs.docs.forEach(d=>batch.delete(d.ref));
+  const ps = await db.collection('publicBids').where('jobId','==',jobId).get();
+  ps.docs.forEach(d=>batch.delete(d.ref));
   batch.delete(db.collection('jobs').doc(jobId));
   await batch.commit();
   ADMIN_STATE.jobs = ADMIN_STATE.jobs.filter(j=>j.id!==jobId);
@@ -425,14 +427,14 @@ async function toggleQuotes(jobId){
   });
   bidsDocs.sort((a,b)=>(a.companyName||'').localeCompare(b.companyName||'','th'));
   el.innerHTML = `<div class="card" style="margin-top:8px;">
-    <span class="eyebrow">ใบเสนอราคาทั้งหมด (${bidsDocs.length} บริษัท) — ไฮไลต์เขียว = ราคาต่ำสุดของรายการนั้น</span>
+    <span class="eyebrow">ใบเสนอราคาทั้งหมด (${bidsDocs.length} บริษัท) — เห็นราคาได้เฉพาะแอดมิน · ไฮไลต์เขียว = ราคาต่ำสุดของรายการนั้น</span>
     ${bidsDocs.map(b=>{
       const rows = items.filter(it=>(b.bids||{})[it.id]).map(it=>{
         const bid = b.bids[it.id];
         const isLowest = bid.price === minPerItem[it.id];
         return `<div class="bid-item-row ${isLowest?'lowest':''}">
-          <span class="lp">${escapeHtml(it.group)} — ${escapeHtml(it.name)}${bid.product?' · เสนอ: '+escapeHtml(bid.product):''}</span>
-          <span class="rp">${fmtBaht(bid.price)}${isLowest?' <span class=\"badge badge-lowest\">ต่ำสุด</span>':''}</span>
+          <span class="lp">${escapeHtml(catName(it.categoryId))} — ${escapeHtml(it.name)}${bid.product?' · เสนอ: '+escapeHtml(bid.product):''}</span>
+          <span class="rp">${bid.price!=null?fmtBaht(bid.price):'-'}${isLowest?' <span class=\"badge badge-lowest\">ต่ำสุด</span>':''}</span>
         </div>`;
       }).join('') || '<div class="hint">ไม่มีรายการที่เสนอราคา</div>';
       return `<div class="bid-card">
@@ -461,18 +463,17 @@ function openJobModal(jobId){
   const editing = !!jobId;
   const job = editing ? ADMIN_STATE.jobs.find(j=>j.id===jobId) : null;
   SPEC_DRAFT = editing ? JSON.parse(JSON.stringify(job.items||[])) : [];
-  const catOptions = ADMIN_STATE.categories.map(c=>`<option value="${c.id}" ${job&&job.categoryId===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('');
+  if(ADMIN_STATE.categories.length===0){ toast('กรุณาเพิ่มหมวดงานก่อนสร้างโครงการ'); return; }
   const bg = document.createElement('div');
   bg.className = 'modal-bg';
   bg.innerHTML = `
     <div class="modal">
       <h3 class="disp" style="margin-top:0;">${editing?'แก้ไขโครงการ':'สร้างโครงการใหม่'}</h3>
-      <label>หมวดงาน</label><select id="newJobCat">${catOptions}</select>
       <label>ชื่อโครงการ</label><input id="newJobTitle" placeholder="เช่น ปรับปรุงอาคารเรียนรวม 1" value="${editing?escapeHtml(job.title):''}">
       <label>รายละเอียด (ไม่บังคับ)</label><textarea id="newJobDesc" placeholder="ขอบเขตงาน เงื่อนไข ฯลฯ">${editing?escapeHtml(job.description||''):''}</textarea>
       <label>กำหนดส่งราคาภายใน (ไม่บังคับ)</label><input id="newJobDeadline" placeholder="เช่น 30 ก.ย. 2569" value="${editing?escapeHtml(job.deadline||''):''}">
       <label style="margin-bottom:2px;">รายการสเปคของโครงการ</label>
-      <div class="hint" style="margin-top:0;margin-bottom:8px;">แยกตามกลุ่มงาน เช่น กลุ่ม “พื้น” รายการ “กระเบื้อง 60×60” — บริษัทจะเสนอผลิตภัณฑ์และราคาแยกตามแต่ละรายการ</div>
+      <div class="hint" style="margin-top:0;margin-bottom:8px;">แต่ละรายการเลือก “หมวดงาน” เช่น พื้น แล้วตั้งชื่อรายการ เช่น “กระเบื้อง 60×60” — บริษัทจะเสนอผลิตภัณฑ์และราคาตามสเปคที่ตั้งไว้นี้</div>
       <div id="specRows"></div>
       <button class="btn btn-ghost btn-sm" type="button" onclick="addSpecRow()">+ เพิ่มรายการสเปค</button>
       <div style="display:flex;gap:10px;margin-top:20px;">
@@ -483,17 +484,18 @@ function openJobModal(jobId){
   document.body.appendChild(bg);
   drawSpecRows();
 }
-function addSpecRow(){ SPEC_DRAFT.push({id: uid(), group:'', name:'', spec:'', unit:'', qty:''}); drawSpecRows(); }
+function addSpecRow(){ SPEC_DRAFT.push({id: uid(), categoryId: ADMIN_STATE.categories[0].id, name:'', spec:'', unit:'', qty:''}); drawSpecRows(); }
 function removeSpecRow(id){ SPEC_DRAFT = SPEC_DRAFT.filter(s=>s.id!==id); drawSpecRows(); }
 function updateSpecField(id, field, val){ const s = SPEC_DRAFT.find(s=>s.id===id); if(s) s[field]=val; }
 function drawSpecRows(){
   const el = document.getElementById('specRows');
   if(!el) return;
+  const catOpts = c => ADMIN_STATE.categories.map(cat=>`<option value="${cat.id}" ${c===cat.id?'selected':''}>${escapeHtml(cat.name)}</option>`).join('');
   el.innerHTML = SPEC_DRAFT.length===0 ? '<div class="hint" style="margin-bottom:10px;">ยังไม่มีรายการสเปค กด “เพิ่มรายการสเปค” เพื่อเริ่ม</div>' :
     SPEC_DRAFT.map(s=>`
       <div class="spec-row">
         <div class="fields">
-          <input placeholder="กลุ่มงาน เช่น พื้น" value="${escapeHtml(s.group)}" oninput="updateSpecField('${s.id}','group',this.value)">
+          <select onchange="updateSpecField('${s.id}','categoryId',this.value)">${catOpts(s.categoryId)}</select>
           <input placeholder="รายการ เช่น กระเบื้อง 60×60" value="${escapeHtml(s.name)}" oninput="updateSpecField('${s.id}','name',this.value)">
           <input class="full" placeholder="สเปค/รายละเอียด เช่น เกรด A สีเทา กันลื่น" value="${escapeHtml(s.spec)}" oninput="updateSpecField('${s.id}','spec',this.value)">
           <input placeholder="หน่วย เช่น ตร.ม." value="${escapeHtml(s.unit)}" oninput="updateSpecField('${s.id}','unit',this.value)">
@@ -503,17 +505,16 @@ function drawSpecRows(){
       </div>`).join('');
 }
 async function saveJob(jobId){
-  const categoryId = document.getElementById('newJobCat').value;
   const title = document.getElementById('newJobTitle').value.trim();
   const description = document.getElementById('newJobDesc').value.trim();
   const deadline = document.getElementById('newJobDeadline').value.trim();
   if(!title){ toast('กรุณากรอกชื่อโครงการ'); return; }
-  const items = SPEC_DRAFT.filter(s=>s.name.trim()).map(s=>({...s, group: s.group.trim()||'ทั่วไป', name: s.name.trim()}));
+  const items = SPEC_DRAFT.filter(s=>s.name.trim()).map(s=>({...s, name: s.name.trim()}));
   if(jobId){
-    await db.collection('jobs').doc(jobId).update({categoryId, title, description, deadline, items});
+    await db.collection('jobs').doc(jobId).update({title, description, deadline, items});
     toast('บันทึกการแก้ไขแล้ว');
   } else {
-    await db.collection('jobs').add({categoryId, title, description, deadline, items, status:'open', createdAt: firebase.firestore.FieldValue.serverTimestamp()});
+    await db.collection('jobs').add({title, description, deadline, items, status:'open', createdAt: firebase.firestore.FieldValue.serverTimestamp()});
     toast('สร้างโครงการแล้ว');
   }
   document.querySelector('.modal-bg')?.remove();
@@ -523,35 +524,49 @@ async function saveJob(jobId){
 /* ---------- ADMIN: DATA TAB ---------- */
 function adminDataTabHtml(){
   const q = (ADMIN_STATE.productFilter||'').toLowerCase();
+  const cat = ADMIN_STATE.productCat;
+  const cats = ADMIN_STATE.categories;
   const list = ADMIN_STATE.products.filter(p=>{
+    if(cat!=='all' && p.categoryId!==cat) return false;
     if(!q) return true;
-    return (p.productName||'').toLowerCase().includes(q) || (p.companyName||'').toLowerCase().includes(q) || (p.category||'').toLowerCase().includes(q);
+    return (p.productName||'').toLowerCase().includes(q) || (p.companyName||'').toLowerCase().includes(q);
   });
   return `
     <div class="card">
-      <span class="eyebrow">ค้นหา</span>
-      <input placeholder="ค้นหาชื่อสินค้า, บริษัท, หมวดหมู่" value="${escapeHtml(ADMIN_STATE.productFilter||'')}" oninput="ADMIN_STATE.productFilter=this.value; drawAdminTabContent();">
+      <span class="eyebrow">หมวดงาน</span>
+      <div>
+        <span class="cat-chip ${cat==='all'?'active':''}" onclick="setProductCat('all')">ทั้งหมด (${ADMIN_STATE.products.length})</span>
+        ${cats.map(c=>{
+          const count = ADMIN_STATE.products.filter(p=>p.categoryId===c.id).length;
+          return `<span class="cat-chip ${cat===c.id?'active':''}" onclick="setProductCat('${c.id}')">${escapeHtml(c.name)} (${count})</span>`;
+        }).join('')}
+      </div>
+      <label>ค้นหาชื่อสินค้า / บริษัท</label>
+      <input placeholder="พิมพ์เพื่อค้นหา" value="${escapeHtml(ADMIN_STATE.productFilter||'')}" oninput="ADMIN_STATE.productFilter=this.value; drawAdminTabContent();">
     </div>
     <div class="card">
-      <span class="eyebrow">สินค้าที่บริษัทเสนอเข้ามาอิสระ (${list.length})</span>
+      <span class="eyebrow">สินค้าที่บริษัทเสนอเข้ามาอิสระ (${list.length}) — เห็นราคาได้เฉพาะแอดมิน</span>
       ${list.length===0 ? `<div class="empty"><div class="disp">ยังไม่มีข้อมูลสินค้า</div>ให้บริษัทเข้าลิงก์เดียวกันแล้วเลือกแท็บ “เสนอสินค้าทั่วไป”</div>` :
         list.map(p=>`
         <div class="prod-card">
           <div class="prod-top">
             <span class="quote-company" style="font-weight:700;">${escapeHtml(p.productName)}</span>
+            <span class="badge badge-cat">${escapeHtml(catName(p.categoryId))}</span>
             ${p.isEdited?'<span class="badge badge-edited">แก้ไขแล้ว</span>':''}
             <span class="prod-price">${p.price!=null?fmtBaht(p.price):'-'}</span>
           </div>
-          <div class="quote-note">${escapeHtml(p.companyName)} · โทร ${escapeHtml(p.companyPhone)}${p.category?' · '+escapeHtml(p.category):''} · ส่งล่าสุด ${fmtDate(p.updatedAt||p.submittedAt)}</div>
+          <div class="quote-note">${escapeHtml(p.companyName)} · โทร ${escapeHtml(p.companyPhone)} · ส่งล่าสุด ${fmtDate(p.updatedAt||p.submittedAt)}</div>
           ${p.description?`<div class="quote-note">${escapeHtml(p.description)}</div>`:''}
           ${p.fileURL?`<div class="quote-file">📎 <a href="${p.fileURL}" target="_blank" rel="noopener">${escapeHtml(p.fileName||'เอกสารแนบ/รูปภาพ')}</a></div>`:''}
           <div style="margin-top:8px;"><button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">ลบรายการนี้</button></div>
         </div>`).join('')}
     </div>`;
 }
+function setProductCat(id){ ADMIN_STATE.productCat = id; drawAdminTabContent(); }
 async function deleteProduct(id){
   if(!confirm('ยืนยันลบรายการสินค้านี้?')) return;
   await db.collection('products').doc(id).delete();
+  await db.collection('publicProducts').doc(id).delete().catch(()=>{});
   ADMIN_STATE.products = ADMIN_STATE.products.filter(p=>p.id!==id);
   drawAdminTabContent();
   toast('ลบรายการแล้ว');
@@ -559,16 +574,20 @@ async function deleteProduct(id){
 
 /* =========================================================
    VENDOR PORTAL (ลิงก์เดียว ?vendor=1) — บริษัทดูได้/กรอกได้อย่างเดียว
+   ทุกคนเห็นชื่อบริษัท ผลิตภัณฑ์ เบอร์โทร ยกเว้น "ราคา" ที่เห็นเฉพาะแอดมิน
 ========================================================= */
-let VENDOR_STATE = { tab:'bid', companyName:'', companyPhone:'', jobs:[], activeJobId:null, activeJob:null, roster:[], existingBid:null,
-  editingProductId:null, myProducts:[] };
+let VENDOR_STATE = { tab:'bid', companyName:'', companyPhone:'', categories:[], jobs:[], activeJobId:null, activeJob:null,
+  publicBids:[], existingBid:null, editingProductId:null, myProducts:[], dataCat:'all', catalog:[] };
 
 async function renderVendorPortal(){
   app.innerHTML = `<div class="empty">กำลังโหลด…</div>`;
+  const catSnap = await db.collection('categories').orderBy('order').get().catch(()=>null);
+  VENDOR_STATE.categories = catSnap ? catSnap.docs.map(d=>({id:d.id, ...d.data()})) : [];
   const jobSnap = await db.collection('jobs').where('status','==','open').get().catch(()=>null);
   VENDOR_STATE.jobs = jobSnap ? jobSnap.docs.map(d=>({id:d.id, items:[], ...d.data()})) : [];
   drawVendorShell();
 }
+function vCatName(id){ const c = VENDOR_STATE.categories.find(c=>c.id===id); return c ? c.name : 'ไม่ระบุหมวดงาน'; }
 
 function drawVendorShell(){
   app.innerHTML = `
@@ -602,6 +621,7 @@ function drawVendorContent(){
     if(VENDOR_STATE.activeJobId) loadVendorJobDetail(VENDOR_STATE.activeJobId);
   } else {
     el.innerHTML = vendorDataTabHtml();
+    loadPublicCatalog();
   }
 }
 
@@ -633,8 +653,8 @@ async function loadVendorJobDetail(jobId){
   VENDOR_STATE.activeJob = job;
   const phone = normPhone(VENDOR_STATE.companyPhone);
 
-  const rosterSnap = await db.collection('publicEntries').where('jobId','==',jobId).get().catch(()=>null);
-  VENDOR_STATE.roster = rosterSnap ? rosterSnap.docs.map(d=>d.data()) : [];
+  const pubSnap = await db.collection('publicBids').where('jobId','==',jobId).get().catch(()=>null);
+  VENDOR_STATE.publicBids = pubSnap ? pubSnap.docs.map(d=>d.data()) : [];
 
   const quoteDoc = await db.collection('quotes').doc(jobId+'_'+phone).get().catch(()=>null);
   VENDOR_STATE.existingBid = (quoteDoc && quoteDoc.exists) ? quoteDoc.data() : null;
@@ -649,9 +669,9 @@ function vendorJobDetailHtml(){
 function drawVendorJobDetailBody(){
   const job = VENDOR_STATE.activeJob;
   const items = job.items || [];
-  const groups = [...new Set(items.map(i=>i.group))];
+  const catIds = [...new Set(items.map(i=>i.categoryId))];
   const existing = VENDOR_STATE.existingBid;
-  const roster = VENDOR_STATE.roster;
+  const pub = VENDOR_STATE.publicBids;
   const body = document.getElementById('vendorJobDetailBody');
   if(!body) return;
   body.innerHTML = `
@@ -660,35 +680,33 @@ function drawVendorJobDetailBody(){
       <h2 class="disp" style="margin:12px 0 6px;">${escapeHtml(job.title)}</h2>
       ${job.description?`<p style="white-space:pre-wrap;color:var(--ink-soft);">${escapeHtml(job.description)}</p>`:''}
       ${job.deadline?`<p class="status-line">กำหนดส่งราคาภายใน: <strong>${escapeHtml(job.deadline)}</strong></p>`:''}
-    </div>
-    <div class="card">
-      <span class="eyebrow">บริษัทที่เสนอราคาแล้ว (${roster.length})</span>
-      <div class="hint" style="margin-bottom:0;">${roster.length===0?'ยังไม่มีบริษัทเสนอราคา — เป็นรายแรกได้เลย':roster.map(r=>escapeHtml(r.companyName)).join(', ')}</div>
-      <div class="hint" style="color:var(--warn);margin-top:8px;">บริษัทอื่นเห็นเฉพาะชื่อบริษัทที่เข้าร่วม จะไม่เห็นผลิตภัณฑ์หรือราคาที่ท่านเสนอเด็ดขาด</div>
+      <p class="hint" style="color:var(--warn);">ทุกบริษัทเห็นชื่อบริษัทและผลิตภัณฑ์ที่เสนอของกันและกันได้ แต่จะไม่เห็น “ราคา” ที่บริษัทอื่นเสนอเด็ดขาด — ราคาจะแสดงเฉพาะแอดมินเท่านั้น</p>
     </div>
     <div class="card">
       <span class="eyebrow">เสนอผลิตภัณฑ์และราคาต่อรายการสเปค</span>
       ${existing?`<div class="hint" style="color:var(--ok);margin-top:0;">พบข้อมูลที่เคยส่งไว้ ระบบดึงมาให้แล้ว แก้ไขแล้วกดส่งซ้ำได้เลย</div>`:''}
-      ${groups.map(g=>`
-        <div class="spec-group-title">${escapeHtml(g)}</div>
-        ${items.filter(i=>i.group===g).map(it=>{
+      ${catIds.map(cid=>`
+        <div class="spec-group-title">${escapeHtml(vCatName(cid))}</div>
+        ${items.filter(i=>i.categoryId===cid).map(it=>{
           const prev = existing && existing.bids && existing.bids[it.id];
+          const offers = pub.filter(b=>b.bids && b.bids[it.id]).map(b=>`${escapeHtml(b.companyName)} — ${escapeHtml((b.bids[it.id].product||'ไม่ระบุผลิตภัณฑ์'))}`);
           return `
           <div class="item-bid-input-group">
             <div class="item-title">${escapeHtml(it.name)}</div>
             <div class="item-detail">${[it.spec, it.unit?('หน่วย: '+it.unit):'', it.qty?('จำนวน: '+it.qty):''].filter(Boolean).join(' · ')||'-'}</div>
+            <div class="item-offers">${offers.length? '<b>บริษัทที่เสนอแล้ว:</b> '+offers.join(' · ') : 'ยังไม่มีบริษัทเสนอรายการนี้'}</div>
             <div class="row">
               <div><label style="margin-top:0;">ผลิตภัณฑ์/ยี่ห้อที่เสนอ</label><input id="bidprod_${it.id}" placeholder="เช่น กระเบื้อง Cotto รุ่น..." value="${prev?escapeHtml(prev.product||''):''}"></div>
-              <div><label style="margin-top:0;">ราคา (บาท)</label><input id="bidprice_${it.id}" type="number" min="0" step="0.01" placeholder="0.00" value="${prev&&prev.price!=null?prev.price:''}"></div>
+              <div><label style="margin-top:0;">ราคา (บาท) — แอดมินเห็นเท่านั้น</label><input id="bidprice_${it.id}" type="number" min="0" step="0.01" placeholder="0.00" value="${prev&&prev.price!=null?prev.price:''}"></div>
             </div>
           </div>`;
         }).join('')}
       `).join('') || '<div class="hint">โครงการนี้ยังไม่มีรายการสเปค</div>'}
       <label>รายละเอียดเพิ่มเติมของใบเสนอราคา (ไม่บังคับ)</label>
       <textarea id="bidNote" placeholder="เงื่อนไข ระยะเวลาส่งมอบ ฯลฯ">${existing?escapeHtml(existing.note||''):''}</textarea>
-      <label>แนบไฟล์ใบเสนอราคา (ไม่บังคับ)</label>
+      <label>แนบไฟล์ใบเสนอราคา (ไม่บังคับ, แอดมินเห็นเท่านั้น)</label>
       <input id="bidFile" type="file" accept=".pdf,image/*">
-      ${existing&&existing.fileURL?`<div class="quote-file">ไฟล์เดิม: 📎 <a href="${existing.fileURL}" target="_blank" rel="noopener">${escapeHtml(existing.fileName||'เอกสารแนบ')}</a> (แนบไฟล์ใหม่เพื่อแทนที่)</div>`:''}
+      ${existing&&existing.fileURL?`<div class="quote-file">มีไฟล์เดิมอยู่แล้ว (แนบไฟล์ใหม่เพื่อแทนที่)</div>`:''}
       <button class="btn btn-primary" style="width:100%;margin-top:18px;" id="submitBidBtn" onclick="submitBid('${VENDOR_STATE.activeJobId}')">${existing?'ส่งราคาอีกครั้ง (แก้ไข)':'ส่งใบเสนอราคา'}</button>
       <div class="hint" id="submitBidMsg" style="margin-top:10px;"></div>
     </div>`;
@@ -700,7 +718,7 @@ async function submitBid(jobId){
   const items = job.items || [];
   const btn = document.getElementById('submitBidBtn');
   const msg = document.getElementById('submitBidMsg');
-  btn.disabled = true; btn.textContent = 'กำลังส่ง…'; msg.textContent=''; 
+  btn.disabled = true; btn.textContent = 'กำลังส่ง…'; msg.textContent='';
 
   const bids = {};
   items.forEach(it=>{
@@ -708,7 +726,11 @@ async function submitBid(jobId){
     const priceEl = document.getElementById('bidprice_'+it.id);
     const priceVal = priceEl ? parseFloat(priceEl.value) : NaN;
     const prodVal = prodEl ? prodEl.value.trim() : '';
-    if(!isNaN(priceVal) || prodVal){ bids[it.id] = { product: prodVal, price: isNaN(priceVal)?null:priceVal }; }
+    if(!isNaN(priceVal) || prodVal){
+      const entry = { product: prodVal };
+      if(!isNaN(priceVal)) entry.price = priceVal;
+      bids[it.id] = entry;
+    }
   });
   if(Object.keys(bids).length===0){
     msg.style.color='var(--flame)'; msg.textContent='กรุณาเสนอราคาอย่างน้อย 1 รายการ';
@@ -720,6 +742,7 @@ async function submitBid(jobId){
 
   const quoteId = jobId+'_'+phone;
   const quoteRef = db.collection('quotes').doc(quoteId);
+  const pubRef = db.collection('publicBids').doc(quoteId);
   try{
     const existing = await quoteRef.get();
     const isEdit = existing.exists;
@@ -741,31 +764,36 @@ async function submitBid(jobId){
     else { payload.submittedAt = firebase.firestore.FieldValue.serverTimestamp(); payload.firstSubmittedAt = firebase.firestore.FieldValue.serverTimestamp(); }
     await quoteRef.set(payload, {merge:true});
 
-    await db.collection('publicEntries').doc(quoteId).set({
-      jobId, companyName: VENDOR_STATE.companyName.trim(),
-      submittedAt: payload.firstSubmittedAt || firebase.firestore.FieldValue.serverTimestamp(), isEdited: isEdit
+    const publicBidsOnly = {};
+    Object.keys(bids).forEach(k=>{ publicBidsOnly[k] = { product: bids[k].product || '' }; });
+    await pubRef.set({
+      jobId, companyName: VENDOR_STATE.companyName.trim(), companyPhone: VENDOR_STATE.companyPhone.trim(),
+      note, bids: publicBidsOnly,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: isEdit,
+      submittedAt: payload.firstSubmittedAt || firebase.firestore.FieldValue.serverTimestamp()
     }, {merge:true});
 
     msg.style.color='var(--ok)';
     msg.textContent = isEdit ? '✓ แก้ไขใบเสนอราคาเรียบร้อยแล้ว' : '✓ ส่งใบเสนอราคาเรียบร้อยแล้ว ขอบคุณครับ';
     toast('บันทึกใบเสนอราคาแล้ว');
     VENDOR_STATE.existingBid = payload;
+    loadVendorJobDetail(jobId);
   }catch(e){
     msg.style.color='var(--flame)'; msg.textContent = 'เกิดข้อผิดพลาด: ' + (e.message||e);
-  }finally{
     btn.disabled=false; btn.textContent = VENDOR_STATE.existingBid?'ส่งราคาอีกครั้ง (แก้ไข)':'ส่งใบเสนอราคา';
   }
 }
 
-/* ---- Data tab: free product submission ---- */
+/* ---- Data tab: free product submission (ไม่ผูกกับโครงการ, ตามหมวดงาน) ---- */
 function vendorDataTabHtml(){
+  const catOpts = VENDOR_STATE.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
   return `
     <div class="card">
       <span class="eyebrow">เสนอข้อมูลสินค้า/ผลิตภัณฑ์ (ไม่ผูกกับโครงการใด)</span>
-      <p class="hint" style="margin-top:0;">ใช้สำหรับนำเสนอสินค้าทั่วไปของบริษัทท่าน ไม่จำเป็นต้องเกี่ยวข้องกับโครงการที่เปิดประมูลอยู่</p>
+      <p class="hint" style="margin-top:0;">ใช้สำหรับนำเสนอสินค้าทั่วไปของบริษัทท่านตามหมวดงาน ไม่จำเป็นต้องเกี่ยวข้องกับโครงการที่เปิดประมูลอยู่ · ทุกคนเห็นชื่อบริษัท ผลิตภัณฑ์ และเบอร์โทรได้ แต่ “ราคา” เห็นเฉพาะแอดมิน</p>
+      <label>หมวดงาน</label><select id="pCategory">${catOpts}</select>
       <label>ชื่อสินค้า/ผลิตภัณฑ์ *</label><input id="pName" placeholder="เช่น กระเบื้องยาง SPC รุ่น...">
-      <label>หมวดหมู่ (ไม่บังคับ)</label><input id="pCategory" placeholder="เช่น วัสดุปูพื้น">
-      <label>ราคา (บาท, ไม่บังคับ)</label><input id="pPrice" type="number" min="0" step="0.01" placeholder="0.00">
+      <label>ราคา (บาท, ไม่บังคับ) — แอดมินเห็นเท่านั้น</label><input id="pPrice" type="number" min="0" step="0.01" placeholder="0.00">
       <label>รายละเอียด (ไม่บังคับ)</label><textarea id="pDesc" placeholder="สเปค คุณสมบัติ เงื่อนไข ฯลฯ"></textarea>
       <label>แนบไฟล์/รูปสินค้า (ไม่บังคับ)</label><input id="pFile" type="file" accept=".pdf,image/*">
       <button class="btn btn-primary" style="width:100%;margin-top:18px;" id="submitProdBtn" onclick="submitProduct()">บันทึกข้อมูลสินค้า</button>
@@ -773,11 +801,44 @@ function vendorDataTabHtml(){
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span class="eyebrow" style="margin:0;">สินค้าที่เคยส่งด้วยเบอร์นี้</span>
+        <span class="eyebrow" style="margin:0;">สินค้าที่เคยส่งด้วยเบอร์นี้ (ดูราคาของตัวเองได้)</span>
         <button class="btn btn-ghost btn-sm" onclick="loadMyProducts()">ค้นหา</button>
       </div>
       <div id="myProductsList" class="hint" style="margin-top:10px;">กรอกเบอร์ติดต่อด้านบน แล้วกด “ค้นหา” เพื่อดูและแก้ไขรายการที่เคยส่ง</div>
+    </div>
+    <div class="card">
+      <span class="eyebrow">คลังสินค้าทั้งหมด (มองเห็นได้ทุกบริษัท ไม่แสดงราคา)</span>
+      <div style="margin-bottom:10px;">
+        <span class="cat-chip ${VENDOR_STATE.dataCat==='all'?'active':''}" onclick="setDataCat('all')">ทั้งหมด</span>
+        ${VENDOR_STATE.categories.map(c=>`<span class="cat-chip ${VENDOR_STATE.dataCat===c.id?'active':''}" onclick="setDataCat('${c.id}')">${escapeHtml(c.name)}</span>`).join('')}
+      </div>
+      <div id="catalogList"><div class="hint">กำลังโหลด…</div></div>
     </div>`;
+}
+function setDataCat(id){ VENDOR_STATE.dataCat=id; drawVendorCatalog(); }
+
+async function loadPublicCatalog(){
+  const snap = await db.collection('publicProducts').orderBy('submittedAt','desc').get().catch(()=>null);
+  VENDOR_STATE.catalog = snap ? snap.docs.map(d=>({id:d.id, ...d.data()})) : [];
+  drawVendorCatalog();
+}
+function drawVendorCatalog(){
+  const el = document.getElementById('catalogList');
+  if(!el) return;
+  const cat = VENDOR_STATE.dataCat;
+  const list = VENDOR_STATE.catalog.filter(p=> cat==='all' || p.categoryId===cat);
+  el.innerHTML = list.length===0 ? '<div class="hint">ยังไม่มีข้อมูลสินค้าในหมวดนี้</div>' :
+    list.map(p=>`
+      <div class="prod-card">
+        <div class="prod-top">
+          <span class="quote-company" style="font-weight:700;">${escapeHtml(p.productName)}</span>
+          <span class="badge badge-cat">${escapeHtml(vCatName(p.categoryId))}</span>
+          ${p.isEdited?'<span class="badge badge-edited">แก้ไขแล้ว</span>':''}
+        </div>
+        <div class="quote-note">${escapeHtml(p.companyName)} · โทร ${escapeHtml(p.companyPhone)} · ส่งล่าสุด ${fmtDate(p.updatedAt||p.submittedAt)}</div>
+        ${p.description?`<div class="quote-note">${escapeHtml(p.description)}</div>`:''}
+        ${p.fileURL?`<div class="quote-file">📎 <a href="${p.fileURL}" target="_blank" rel="noopener">${escapeHtml(p.fileName||'เอกสารแนบ/รูปภาพ')}</a></div>`:''}
+      </div>`).join('');
 }
 
 async function loadMyProducts(){
@@ -790,15 +851,15 @@ async function loadMyProducts(){
   el.innerHTML = VENDOR_STATE.myProducts.map(p=>`
     <div class="prod-card">
       <div class="prod-top"><span class="quote-company" style="font-weight:700;">${escapeHtml(p.productName)}</span><span class="prod-price">${p.price!=null?fmtBaht(p.price):'-'}</span></div>
-      <div class="quote-note">${escapeHtml(p.category||'')}</div>
+      <div class="quote-note">${escapeHtml(vCatName(p.categoryId))}</div>
       <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="editMyProduct('${p.id}')">แก้ไขรายการนี้</button>
     </div>`).join('');
 }
 function editMyProduct(id){
   const p = VENDOR_STATE.myProducts.find(p=>p.id===id); if(!p) return;
   VENDOR_STATE.editingProductId = id;
+  document.getElementById('pCategory').value = p.categoryId||'';
   document.getElementById('pName').value = p.productName||'';
-  document.getElementById('pCategory').value = p.category||'';
   document.getElementById('pPrice').value = p.price!=null?p.price:'';
   document.getElementById('pDesc').value = p.description||'';
   document.getElementById('submitProdBtn').textContent = 'บันทึกการแก้ไข';
@@ -808,8 +869,8 @@ function editMyProduct(id){
 
 async function submitProduct(){
   const phone = requirePhone(); if(!phone) return;
+  const categoryId = document.getElementById('pCategory').value;
   const productName = document.getElementById('pName').value.trim();
-  const category = document.getElementById('pCategory').value.trim();
   const priceVal = parseFloat(document.getElementById('pPrice').value);
   const description = document.getElementById('pDesc').value.trim();
   const fileInput = document.getElementById('pFile');
@@ -821,6 +882,7 @@ async function submitProduct(){
     const isEdit = !!VENDOR_STATE.editingProductId;
     const id = VENDOR_STATE.editingProductId || uid();
     const ref = db.collection('products').doc(id);
+    const pubRef = db.collection('publicProducts').doc(id);
     let fileURL = null, fileName = null;
     if(isEdit){ const cur = await ref.get(); if(cur.exists){ fileURL = cur.data().fileURL||null; fileName = cur.data().fileName||null; } }
     const file = fileInput.files[0];
@@ -830,24 +892,53 @@ async function submitProduct(){
       fileURL = uploaded.url; fileName = uploaded.name;
       btn.textContent = 'กำลังบันทึก…';
     }
+    const companyName = VENDOR_STATE.companyName.trim();
+    const companyPhone = VENDOR_STATE.companyPhone.trim();
     const payload = {
-      companyName: VENDOR_STATE.companyName.trim(), companyPhone: VENDOR_STATE.companyPhone.trim(),
-      productName, category, price: isNaN(priceVal)?null:priceVal, description, fileURL, fileName,
+      companyName, companyPhone, productName, categoryId, price: isNaN(priceVal)?null:priceVal, description, fileURL, fileName,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: isEdit
     };
     if(!isEdit) payload.submittedAt = firebase.firestore.FieldValue.serverTimestamp();
     await ref.set(payload, {merge:true});
+
+    await pubRef.set({
+      companyName, companyPhone, productName, categoryId, description, fileURL, fileName,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: isEdit,
+      submittedAt: payload.submittedAt || firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+
     msg.style.color='var(--ok)'; msg.textContent = isEdit ? '✓ แก้ไขข้อมูลสินค้าเรียบร้อยแล้ว' : '✓ บันทึกข้อมูลสินค้าเรียบร้อยแล้ว ขอบคุณครับ';
     toast('บันทึกสินค้าแล้ว');
     VENDOR_STATE.editingProductId = null;
     btn.textContent = 'บันทึกข้อมูลสินค้า';
     loadMyProducts();
+    loadPublicCatalog();
   }catch(e){
     msg.style.color='var(--flame)'; msg.textContent = 'เกิดข้อผิดพลาด: ' + (e.message||e);
   }finally{
     btn.disabled = false;
   }
 }
+
+/* ===================================================================
+   หมายเหตุความปลอดภัยของราคา (สำคัญ)
+   แอปนี้เป็นหน้าเว็บฝั่ง client ล้วน ไม่มีเซิร์ฟเวอร์ตรงกลาง การซ่อนราคา
+   จากบริษัทอื่นในหน้าจอทำได้แล้ว (หน้า Bidding/Data ฝั่งบริษัทดึงข้อมูลจาก
+   collection "publicBids" / "publicProducts" ซึ่งไม่มีฟิลด์ราคาอยู่จริง)
+   แต่ collection "quotes" และ "products" (ที่มีราคา) ยังอ่านได้จากฝั่ง client
+   หากไม่ได้ตั้ง Firestore Security Rules จำกัดสิทธิ์ไว้ แนะนำให้ตั้งกฎ
+   ประมาณนี้ใน Firebase Console > Firestore Database > Rules เพื่อให้
+   เฉพาะแอดมิน (ผู้ล็อกอิน) เท่านั้นที่อ่าน "quotes" และ "products" ได้:
+
+   match /quotes/{id}   { allow read: if request.auth != null; allow write: if true; }
+   match /products/{id} { allow read: if request.auth != null; allow write: if true; }
+   match /publicBids/{id}     { allow read, write: if true; }
+   match /publicProducts/{id} { allow read, write: if true; }
+   match /jobs/{id}       { allow read: if true; allow write: if request.auth != null; }
+   match /categories/{id} { allow read: if true; allow write: if request.auth != null; }
+
+   (และต้องปิด TEST_MODE_NO_LOGIN เป็น false ก่อนใช้งานจริง)
+   =================================================================== */
 </script>
 </body>
 </html>
