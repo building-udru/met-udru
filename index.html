@@ -444,37 +444,37 @@ async function toggleQuotes(jobId){
     el.innerHTML = `<div class="empty" style="padding:16px;">ยังไม่มีบริษัทเสนอราคาเข้ามา</div>`;
     return;
   }
-  const minPerItem = {};
-  items.forEach(it=>{
-    let min = Infinity;
-    bidsDocs.forEach(b=>{ const bid = (b.bids||{})[it.id]; if(bid && typeof bid.price==='number' && bid.price < min) min = bid.price; });
-    minPerItem[it.id] = min;
-  });
-  bidsDocs.sort((a,b)=>(a.companyName||'').localeCompare(b.companyName||'','th'));
+  const catIds = [...new Set(items.map(i=>i.categoryId))];
   el.innerHTML = `<div class="card" style="margin-top:8px;">
-    <span class="eyebrow">ใบเสนอราคาทั้งหมด (${bidsDocs.length} บริษัท) — เห็นราคาได้เฉพาะแอดมิน · ไฮไลต์เขียว = ราคาต่ำสุดของรายการนั้น</span>
-    ${bidsDocs.map(b=>{
-      const rows = items.filter(it=>(b.bids||{})[it.id]).map(it=>{
-        const bid = b.bids[it.id];
-        const isLowest = bid.price === minPerItem[it.id];
-        return `<div class="bid-item-row ${isLowest?'lowest':''}">
-          <span class="lp">${escapeHtml(catName(it.categoryId))} — ${escapeHtml(it.name)}${bid.product?' · เสนอ: '+escapeHtml(bid.product):''}</span>
-          <span class="rp">${bid.price!=null?fmtBaht(bid.price):'-'}${isLowest?' <span class=\"badge badge-lowest\">ต่ำสุด</span>':''}</span>
-        </div>
-        ${bid.note?`<div class="quote-note" style="margin:2px 0 6px;">รายละเอียด: ${escapeHtml(bid.note)}</div>`:''}
-        ${bid.fileURL?`<div class="quote-file" style="margin-bottom:6px;">📎 <a href="${bid.fileURL}" target="_blank" rel="noopener">${escapeHtml(bid.fileName||'เอกสารแนบ')}</a></div>`:''}`;
-      }).join('') || '<div class="hint">ไม่มีรายการที่เสนอราคา</div>';
-      return `<div class="bid-card">
-        <div class="bid-card-top">
-          <div class="company-block">
-            <span class="cb-name">${escapeHtml(b.companyName)} ${b.isEdited?'<span class="badge badge-edited">แก้ไขแล้ว</span>':''}</span>
-            <span class="cb-phone">โทร ${escapeHtml(b.companyPhone)}</span>
-          </div>
-          <span class="hint" style="margin:0;">ส่งล่าสุด ${fmtDate(b.updatedAt||b.submittedAt)}</span>
-        </div>
-        ${rows}
-      </div>`;
-    }).join('')}
+    <span class="eyebrow">ใบเสนอราคาทั้งหมด (${bidsDocs.length} บริษัท) — จัดกลุ่มตามรายการสเปค เพื่อเทียบราคาสินค้าชนิดเดียวกัน · เห็นราคาได้เฉพาะแอดมิน · ไฮไลต์เขียว = ราคาต่ำสุดของรายการนั้น</span>
+    ${catIds.map(cid=>`
+      <div class="spec-group-title">${escapeHtml(catName(cid))}</div>
+      ${items.filter(it=>it.categoryId===cid).map(it=>{
+        const offers = bidsDocs.filter(b=>(b.bids||{})[it.id]).map(b=>({b, bid:b.bids[it.id]}));
+        if(offers.length===0) return '';
+        let min = Infinity;
+        offers.forEach(o=>{ if(typeof o.bid.price==='number' && o.bid.price<min) min = o.bid.price; });
+        offers.sort((a,c)=>{
+          const pa = typeof a.bid.price==='number' ? a.bid.price : Infinity;
+          const pc = typeof c.bid.price==='number' ? c.bid.price : Infinity;
+          return pa - pc;
+        });
+        return `<div class="bid-card">
+          <div class="item-title" style="font-size:16px;margin-bottom:2px;">${escapeHtml(it.name)}</div>
+          <div class="item-detail" style="margin-bottom:10px;">${[it.spec, it.unit?('หน่วย: '+it.unit):'', it.qty?('จำนวน: '+it.qty):''].filter(Boolean).join(' · ')||'-'}</div>
+          ${offers.map(({b,bid})=>{
+            const isLowest = bid.price === min;
+            return `<div class="bid-item-row ${isLowest?'lowest':''}">
+              <span class="lp">${escapeHtml(b.companyName)} ${b.isEdited?'<span class="badge badge-edited">แก้ไขแล้ว</span>':''}${bid.product?' · เสนอ: '+escapeHtml(bid.product):''}</span>
+              <span class="rp">${bid.price!=null?fmtBaht(bid.price):'-'}${isLowest?' <span class="badge badge-lowest">ต่ำสุด</span>':''}</span>
+            </div>
+            ${bid.note?`<div class="quote-note" style="margin:2px 0 6px;">รายละเอียด: ${escapeHtml(bid.note)}</div>`:''}
+            ${bid.fileURL?`<div class="quote-file" style="margin-bottom:4px;">📎 <a href="${bid.fileURL}" target="_blank" rel="noopener">${escapeHtml(bid.fileName||'เอกสารแนบ')}</a></div>`:''}
+            <div class="hint" style="margin:0 0 10px;">โทร ${escapeHtml(b.companyPhone)} · ส่งล่าสุด ${fmtDate(b.updatedAt||b.submittedAt)}</div>`;
+          }).join('')}
+        </div>`;
+      }).join('') || '<div class="hint">ยังไม่มีบริษัทเสนอในหมวดนี้</div>'}
+    `).join('')}
   </div>`;
 }
 
@@ -720,12 +720,17 @@ function drawVendorJobDetailBody(){
         <div class="spec-group-title">${escapeHtml(vCatName(cid))}</div>
         ${items.filter(i=>i.categoryId===cid).map(it=>{
           const prev = existing && existing.bids && existing.bids[it.id];
-          const offers = pub.filter(b=>b.bids && b.bids[it.id]).map(b=>`${escapeHtml(b.companyName)} — ${escapeHtml((b.bids[it.id].product||'ไม่ระบุผลิตภัณฑ์'))}`);
+          const offers = pub.filter(b=>b.bids && b.bids[it.id]).map(b=>{
+            const ob = b.bids[it.id];
+            let line = `<b>${escapeHtml(b.companyName)}</b> — ${escapeHtml(ob.product||'ไม่ระบุผลิตภัณฑ์')}`;
+            if(ob.note) line += `<br><span style="color:var(--ink-dim);">รายละเอียด: ${escapeHtml(ob.note)}</span>`;
+            return `<div style="margin-bottom:6px;">${line}</div>`;
+          });
           return `
           <div class="item-bid-input-group ${prev?'is-filled':''}" id="itemcard_${it.id}">
             <div class="item-title">${escapeHtml(it.name)}</div>
             <div class="item-detail">${[it.spec, it.unit?('หน่วย: '+it.unit):'', it.qty?('จำนวน: '+it.qty):''].filter(Boolean).join(' · ')||'-'}</div>
-            <div class="item-offers">${offers.length? '<b>บริษัทที่เสนอแล้ว:</b> '+offers.join(' · ') : 'ยังไม่มีบริษัทเสนอรายการนี้'}</div>
+            <div class="item-offers">${offers.length? '<b style="display:block;margin-bottom:6px;">บริษัทที่เสนอแล้ว:</b>'+offers.join('') : 'ยังไม่มีบริษัทเสนอรายการนี้'}</div>
             <div class="row">
               <div><label style="margin-top:0;">ผลิตภัณฑ์/ยี่ห้อที่เสนอ</label><input id="bidprod_${it.id}" placeholder="เช่น กระเบื้อง Cotto รุ่น..." value="${prev?escapeHtml(prev.product||''):''}"></div>
               <div><label style="margin-top:0;">ราคา (บาท) — แอดมินเห็นเท่านั้น</label><input id="bidprice_${it.id}" type="number" min="0" step="0.01" placeholder="0.00" value="${prev&&prev.price!=null?prev.price:''}"></div>
@@ -794,7 +799,7 @@ async function submitItemBid(jobId, itemId){
 
     await pubRef.set({
       jobId, companyName: VENDOR_STATE.companyName.trim(), companyPhone: VENDOR_STATE.companyPhone.trim(),
-      bids: { [itemId]: { product: entry.product || '' } },
+      bids: { [itemId]: { product: entry.product || '', note: entry.note || '' } },
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: wasEdit,
       submittedAt: payload.firstSubmittedAt || firebase.firestore.FieldValue.serverTimestamp()
     }, {merge:true});
@@ -871,7 +876,6 @@ function drawVendorCatalog(){
         </div>
         <div class="quote-note">เสนอโดย ${escapeHtml(p.companyName)}</div>
         ${p.description?`<div class="quote-note">${escapeHtml(p.description)}</div>`:''}
-        ${p.fileURL?`<div class="quote-file">📎 <a href="${p.fileURL}" target="_blank" rel="noopener">${escapeHtml(p.fileName||'เอกสารแนบ/รูปภาพ')}</a></div>`:''}
       </div>`).join('');
 }
 
@@ -965,7 +969,8 @@ async function submitProduct(){
     await ref.set(payload, {merge:true});
 
     await pubRef.set({
-      companyName, companyPhone, productName, categoryId, description, fileURL, fileName,
+      companyName, companyPhone, productName, categoryId, description,
+      fileURL: firebase.firestore.FieldValue.delete(), fileName: firebase.firestore.FieldValue.delete(),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: isEdit,
       submittedAt: payload.submittedAt || firebase.firestore.FieldValue.serverTimestamp()
     }, {merge:true});
