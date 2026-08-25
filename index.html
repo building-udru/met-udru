@@ -119,6 +119,8 @@
   .item-bid-input-group .item-detail{font-size:14px;color:var(--ink-soft);margin-bottom:12px;}
   .item-bid-input-group label{font-size:14.5px;}
   .item-bid-input-group input{font-size:16px;padding:13px 14px;}
+  .item-bid-input-group input,.item-bid-input-group textarea,.item-bid-input-group select{background:#fff;}
+  .item-bid-input-group input:hover,.item-bid-input-group textarea:hover{border-color:var(--ink-dim);}
   .item-offers{margin:8px 0 14px;padding:10px 12px;background:#fff;border:1px dashed var(--line);border-radius:10px;font-size:13.5px;color:var(--ink-soft);}
   .item-offers b{color:var(--ink);}
   .item-submit-msg{font-size:13px;margin-top:8px;min-height:16px;}
@@ -907,7 +909,7 @@ async function loadMyProducts(){
   if(list.length===0){ el.innerHTML = 'ไม่พบรายการที่ตรงกับการค้นหา'; return; }
   el.innerHTML = list.map(p=>`
     <div class="prod-card">
-      <div class="prod-top"><span class="quote-company" style="font-weight:700;">${escapeHtml(p.productName)}</span><span class="prod-price">${p.price!=null?fmtBaht(p.price):'-'}</span></div>
+      <div class="prod-top"><span class="quote-company" style="font-weight:700;">${escapeHtml(p.productName)}</span></div>
       <div class="quote-note">${escapeHtml(vCatName(p.categoryId))} · ${escapeHtml(p.companyName)}</div>
       <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="editMyProduct('${p.id}')">แก้ไขรายการนี้</button>
     </div>`).join('');
