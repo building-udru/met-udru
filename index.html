@@ -487,7 +487,7 @@ async function toggleQuotes(jobId){
           <div class="quote-price">${fmtBaht(q.price)}</div>
         </div>
         <div class="quote-note">โทร ${escapeHtml(q.companyPhone)} · ส่งล่าสุด ${fmtDate(q.updatedAt||q.submittedAt)}${q.firstSubmittedAt && q.isEdited ? ' (ครั้งแรก '+fmtDate(q.firstSubmittedAt)+')' : ''}</div>
-        ${q.note?`<div class="quote-note">หมายเหตุ: ${escapeHtml(q.note)}</div>`:''}
+        ${q.note?`<div class="quote-note">รายละเอียด: ${escapeHtml(q.note)}</div>`:''}
         ${q.fileURL?`<div class="quote-file">📎 <a href="${q.fileURL}" target="_blank" rel="noopener">${escapeHtml(q.fileName||'เอกสารแนบ')}</a></div>`:''}
       </div>
     `).join('')}
@@ -601,12 +601,12 @@ async function renderPublicJob(jobId){
           <input id="qPrice" type="number" min="0" step="0.01" placeholder="0.00">
         </div>
       </div>
-      <label>หมายเหตุ (ไม่บังคับ)</label>
+      <label>รายละเอียด (ไม่บังคับ)</label>
       <textarea id="qNote" placeholder="เงื่อนไข ระยะเวลาส่งมอบ ฯลฯ"></textarea>
       <label>แนบไฟล์ใบเสนอราคา / รูปสินค้า (ไม่บังคับ)</label>
       <input id="qFile" type="file" accept=".pdf,image/*">
       <div class="hint">ไฟล์ที่แนบจะถูกอัปโหลดเก็บไว้ในระบบโดยตรง (ไม่ใช่ลิงก์อ้างอิง) หากเบอร์ติดต่อนี้เคยส่งราคาสำหรับงานนี้มาก่อน ระบบจะปรับปรุงราคาล่าสุดให้ และจะขึ้นสถานะว่า “แก้ไขแล้ว”</div>
-      <div class="hint" style="color:var(--warn);">หมายเหตุ: บริษัทอื่นจะเห็นแค่ชื่อบริษัทของท่านและเวลาที่ส่ง จะไม่เห็นราคาที่เสนอเด็ดขาด</div>
+      <div class="hint" style="color:var(--warn);">หมายเหตุ: บริษัทอื่นจะเห็นชื่อบริษัท เวลาที่ส่ง และรายละเอียดของท่าน แต่จะไม่เห็นราคาที่เสนอเด็ดขาด</div>
       <button class="btn btn-primary" style="width:100%;margin-top:18px;" id="submitBtn" onclick="submitQuote('${jobId}')">ส่งใบเสนอราคา</button>
       <div class="hint" id="submitMsg" style="margin-top:10px;"></div>
     </div>
@@ -628,11 +628,12 @@ async function loadPublicRoster(jobId){
       el.innerHTML = 'ยังไม่มีบริษัทเสนอราคางานนี้ — เป็นรายแรกได้เลย';
       return;
     }
-    el.innerHTML = `<div class="hint" style="margin-bottom:8px;">มีบริษัทเสนอราคาแล้ว ${entries.length} ราย (แสดงเฉพาะชื่อ ไม่แสดงราคา)</div>` +
+    el.innerHTML = `<div class="hint" style="margin-bottom:8px;">มีบริษัทเสนอราคาแล้ว ${entries.length} ราย (แสดงเฉพาะชื่อและรายละเอียด ไม่แสดงราคา)</div>` +
       entries.map(e=>`
         <div class="quote-item" style="padding:8px 0;">
           <span class="quote-company" style="font-size:14px;">${escapeHtml(e.companyName)}</span>
           <span class="hint" style="margin-left:8px;">ส่งเมื่อ ${fmtDate(e.submittedAt)}${e.isEdited?' · แก้ไขล่าสุด':''}</span>
+          ${e.note?`<div class="quote-note">รายละเอียด: ${escapeHtml(e.note)}</div>`:''}
         </div>
       `).join('');
   }catch(e){
@@ -692,7 +693,7 @@ async function submitQuote(jobId){
 
     const rosterRef = db.collection('publicEntries').doc(quoteId);
     await rosterRef.set({
-      jobId, companyName: company,
+      jobId, companyName: company, note,
       submittedAt: payload.firstSubmittedAt || firebase.firestore.FieldValue.serverTimestamp(),
       isEdited: isEdit
     }, {merge:true});
