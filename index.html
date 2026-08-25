@@ -566,6 +566,11 @@ async function renderPublicJob(jobId){
       ${job.deadline ? `<p class="status-line">กำหนดส่งราคาภายใน: <strong>${escapeHtml(job.deadline)}</strong></p>` : ''}
     </div>
 
+    <div class="card" id="rosterCard">
+      <span class="eyebrow">บริษัทที่เสนอราคาแล้ว</span>
+      <div id="rosterList" class="hint">กำลังโหลด…</div>
+    </div>
+
     <div class="card" id="formCard">
       <span class="eyebrow">ส่งใบเสนอราคา</span>
       <label>ชื่อบริษัท *</label>
@@ -585,10 +590,38 @@ async function renderPublicJob(jobId){
       <label>แนบไฟล์ใบเสนอราคา / รูปสินค้า (ไม่บังคับ)</label>
       <input id="qFile" type="file" accept=".pdf,image/*">
       <div class="hint">ไฟล์ที่แนบจะถูกอัปโหลดเก็บไว้ในระบบโดยตรง (ไม่ใช่ลิงก์อ้างอิง) หากเบอร์ติดต่อนี้เคยส่งราคาสำหรับงานนี้มาก่อน ระบบจะปรับปรุงราคาล่าสุดให้ และจะขึ้นสถานะว่า “แก้ไขแล้ว”</div>
+      <div class="hint" style="color:var(--warn);">หมายเหตุ: บริษัทอื่นจะเห็นแค่ชื่อบริษัทของท่านและเวลาที่ส่ง จะไม่เห็นราคาที่เสนอเด็ดขาด</div>
       <button class="btn btn-primary" style="width:100%;margin-top:18px;" id="submitBtn" onclick="submitQuote('${jobId}')">ส่งใบเสนอราคา</button>
       <div class="hint" id="submitMsg" style="margin-top:10px;"></div>
     </div>
   `;
+  loadPublicRoster(jobId);
+}
+
+async function loadPublicRoster(jobId){
+  const el = document.getElementById('rosterList');
+  try{
+    const snap = await db.collection('publicEntries').where('jobId','==',jobId).get();
+    let entries = snap.docs.map(d=>d.data());
+    entries.sort((a,b)=>{
+      const ta = a.submittedAt?.toMillis ? a.submittedAt.toMillis() : 0;
+      const tb = b.submittedAt?.toMillis ? b.submittedAt.toMillis() : 0;
+      return ta - tb;
+    });
+    if(entries.length===0){
+      el.innerHTML = 'ยังไม่มีบริษัทเสนอราคางานนี้ — เป็นรายแรกได้เลย';
+      return;
+    }
+    el.innerHTML = `<div class="hint" style="margin-bottom:8px;">มีบริษัทเสนอราคาแล้ว ${entries.length} ราย (แสดงเฉพาะชื่อ ไม่แสดงราคา)</div>` +
+      entries.map(e=>`
+        <div class="quote-item" style="padding:8px 0;">
+          <span class="quote-company" style="font-size:14px;">${escapeHtml(e.companyName)}</span>
+          <span class="hint" style="margin-left:8px;">ส่งเมื่อ ${fmtDate(e.submittedAt)}${e.isEdited?' · แก้ไขล่าสุด':''}</span>
+        </div>
+      `).join('');
+  }catch(e){
+    el.innerHTML = '<span class="hint">ไม่สามารถโหลดรายชื่อได้ในขณะนี้</span>';
+  }
 }
 
 async function submitQuote(jobId){
@@ -641,11 +674,19 @@ async function submitQuote(jobId){
 
     await quoteRef.set(payload, {merge:true});
 
+    const rosterRef = db.collection('publicEntries').doc(quoteId);
+    await rosterRef.set({
+      jobId, companyName: company,
+      submittedAt: payload.firstSubmittedAt || firebase.firestore.FieldValue.serverTimestamp(),
+      isEdited: isEdit
+    }, {merge:true});
+
     msg.style.color = 'var(--ok)';
     msg.textContent = isEdit
       ? '✓ แก้ไขใบเสนอราคาเรียบร้อยแล้ว ระบบปรับปรุงจากที่เคยส่งไว้ก่อนหน้านี้'
       : '✓ ส่งใบเสนอราคาเรียบร้อยแล้ว ขอบคุณครับ';
     btn.textContent = 'ส่งราคาอีกครั้ง (แก้ไข)';
+    loadPublicRoster(jobId);
   }catch(e){
     msg.style.color = '#a8362c';
     msg.textContent = 'เกิดข้อผิดพลาด: ' + (e.message||e);
