@@ -33,7 +33,8 @@
   body{background:var(--bg);color:var(--ink);font-family:'Anuphan',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;}
   h1,h2,h3,.disp{font-family:'Anuphan',sans-serif;letter-spacing:-.01em;}
   .mono{font-family:'JetBrains Mono',monospace;}
-  a{color:var(--safety-deep);}
+  a{color:var(--safety-deep);transition:opacity .12s ease;}
+  a:hover{opacity:.75;}
 
   .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;position:sticky;top:0;z-index:30;
     background:rgba(255,255,255,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);flex-wrap:wrap;gap:10px;}
@@ -47,23 +48,30 @@
   .wrap{max-width:1080px;margin:0 auto;padding:32px 28px;}
 
   .btn{font-family:'Anuphan';font-weight:600;font-size:14.5px;border:1px solid var(--line);background:var(--white);color:var(--ink);
-    padding:10px 18px;border-radius:999px;cursor:pointer;transition:transform .12s, box-shadow .12s;}
-  .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px -8px rgba(15,35,64,.18);}
-  .btn:active{transform:translateY(0);}
+    padding:10px 18px;border-radius:999px;cursor:pointer;transition:transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease, color .12s ease;}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px -8px rgba(15,35,64,.18);border-color:var(--ink-dim);}
+  .btn:active{transform:translateY(0) scale(.98);box-shadow:0 2px 6px -4px rgba(15,35,64,.2);}
   .btn-primary{background:linear-gradient(120deg, var(--safety), var(--safety-deep));border-color:transparent;color:#fff;font-weight:700;box-shadow:0 6px 16px -8px rgba(224,99,30,.5);}
-  .btn-primary:hover{filter:brightness(1.04);}
+  .btn-primary:hover{filter:brightness(1.07);border-color:transparent;box-shadow:0 10px 22px -8px rgba(224,99,30,.6);}
+  .btn-primary:active{filter:brightness(.98);}
   .btn-ghost{background:transparent;border-color:var(--line);color:var(--ink-soft);}
+  .btn-ghost:hover{background:var(--bg-3);color:var(--ink);}
   .btn-danger{border-color:rgba(209,72,58,.35);color:var(--flame);background:rgba(209,72,58,.06);}
+  .btn-danger:hover{background:rgba(209,72,58,.12);border-color:rgba(209,72,58,.5);}
   .btn-sm{padding:7px 14px;font-size:13px;}
   .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;}
+  .btn:disabled:hover{transform:none;box-shadow:none;border-color:var(--line);background:var(--white);}
+  .btn-item-submit{width:100%;justify-content:center;display:flex;align-items:center;gap:6px;margin-top:12px;}
 
-  .card{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:16px;box-shadow:var(--shadow);}
+  .card{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:16px;box-shadow:var(--shadow);transition:box-shadow .15s ease, border-color .15s ease;}
   .eyebrow{font-family:'JetBrains Mono';font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--safety-deep);font-weight:600;margin-bottom:8px;display:block;}
   label{display:block;font-size:13.5px;font-weight:600;color:var(--ink-soft);margin:14px 0 6px;}
   label:first-child{margin-top:0;}
-  input,textarea,select{width:100%;font-family:'Anuphan';font-size:15px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--bg-3);color:var(--ink);}
+  input,textarea,select{width:100%;font-family:'Anuphan';font-size:15px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--bg-3);color:var(--ink);transition:border-color .12s ease, box-shadow .12s ease, background .12s ease;}
   input::placeholder,textarea::placeholder{color:var(--ink-dim);}
+  input:hover,textarea:hover,select:hover{border-color:var(--ink-dim);}
   input:focus,textarea:focus,select:focus{outline:none;border-color:var(--safety);box-shadow:0 0 0 3px rgba(224,99,30,.12);background:#fff;}
+  select{cursor:pointer;}
   textarea{resize:vertical;min-height:70px;}
   .hint{font-size:12px;color:var(--ink-dim);margin-top:5px;}
   .row{display:flex;gap:12px;}
@@ -76,15 +84,20 @@
   .badge-lowest{background:var(--ok-bg);color:var(--ok);}
   .badge-cat{background:#eef1fb;color:#3a4b8a;}
 
-  .cat-chip{display:inline-block;padding:6px 14px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:600;margin:0 6px 6px 0;cursor:pointer;background:var(--bg-3);color:var(--ink-soft);transition:border-color .12s, color .12s, background .12s;}
+  .cat-chip{display:inline-block;padding:6px 14px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:600;margin:0 6px 6px 0;cursor:pointer;background:var(--bg-3);color:var(--ink-soft);transition:border-color .12s ease, color .12s ease, background .12s ease, transform .12s ease;}
+  .cat-chip:hover{border-color:var(--safety);color:var(--safety-deep);transform:translateY(-1px);}
   .cat-chip.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+  .cat-chip.active:hover{border-color:var(--ink);color:#fff;filter:brightness(1.15);}
 
   .tabbar{display:flex;gap:6px;background:var(--bg-3);border:1px solid var(--line);border-radius:14px;padding:5px;margin-bottom:20px;}
-  .tabbtn{flex:1;text-align:center;padding:11px 10px;border-radius:10px;font-weight:700;font-size:14.5px;cursor:pointer;color:var(--ink-soft);transition:background .15s,color .15s;}
+  .tabbtn{flex:1;text-align:center;padding:11px 10px;border-radius:10px;font-weight:700;font-size:14.5px;cursor:pointer;color:var(--ink-soft);transition:background .15s ease,color .15s ease;}
+  .tabbtn:hover{background:rgba(255,255,255,.6);color:var(--ink);}
   .tabbtn.active{background:#fff;color:var(--ink);box-shadow:0 4px 12px -6px rgba(15,35,64,.2);}
+  .tabbtn.active:hover{background:#fff;}
   .tabbtn .cnt{font-family:'JetBrains Mono';font-size:11px;color:var(--ink-dim);margin-left:4px;}
 
-  .job-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:16px 0;border-top:1px solid var(--line-soft);}
+  .job-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:16px 0;border-top:1px solid var(--line-soft);border-radius:10px;transition:background .12s ease;}
+  .job-row:hover{background:var(--bg-3);}
   .job-row:first-child{border-top:none;}
   .job-title{font-weight:700;font-size:15.5px;color:var(--ink);}
   .job-meta{font-size:12.5px;color:var(--ink-soft);margin-top:4px;}
@@ -99,14 +112,23 @@
   .spec-row input,.spec-row select{background:#fff;}
   .spec-row .rm{flex:none;}
 
-  .item-bid-input-group{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:var(--bg-3);}
-  .item-bid-input-group .item-title{font-weight:700;font-size:14.5px;margin-bottom:2px;}
-  .item-bid-input-group .item-detail{font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;}
-  .item-offers{margin:6px 0 12px;padding:8px 10px;background:#fff;border:1px dashed var(--line);border-radius:10px;font-size:12.5px;color:var(--ink-soft);}
+  .item-bid-input-group{border:2px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px;background:var(--bg-3);transition:border-color .15s ease, box-shadow .15s ease;}
+  .item-bid-input-group:hover{border-color:var(--gold);box-shadow:0 4px 14px -8px rgba(15,35,64,.18);}
+  .item-bid-input-group.is-filled{border-color:var(--ok);background:var(--ok-bg);}
+  .item-bid-input-group .item-title{font-weight:800;font-size:19px;margin-bottom:4px;color:var(--ink);}
+  .item-bid-input-group .item-detail{font-size:14px;color:var(--ink-soft);margin-bottom:12px;}
+  .item-bid-input-group label{font-size:14.5px;}
+  .item-bid-input-group input{font-size:16px;padding:13px 14px;}
+  .item-offers{margin:8px 0 14px;padding:10px 12px;background:#fff;border:1px dashed var(--line);border-radius:10px;font-size:13.5px;color:var(--ink-soft);}
   .item-offers b{color:var(--ink);}
+  .item-submit-msg{font-size:13px;margin-top:8px;min-height:16px;}
 
-  .bid-card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;}
-  .bid-card-top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;}
+  .bid-card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;transition:box-shadow .12s ease,border-color .12s ease;}
+  .bid-card:hover{box-shadow:0 4px 14px -8px rgba(15,35,64,.16);border-color:var(--ink-dim);}
+  .bid-card-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;}
+  .company-block{display:flex;flex-direction:column;gap:2px;}
+  .company-block .cb-name{font-weight:700;font-size:14.5px;color:var(--ink);}
+  .company-block .cb-phone{font-size:12px;color:var(--ink-dim);font-family:'JetBrains Mono';}
   .bid-item-row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px dashed var(--line-soft);font-size:13.5px;}
   .bid-item-row:first-child{border-top:none;}
   .bid-item-row .lp{font-weight:600;}
@@ -118,7 +140,8 @@
   .quote-note{font-size:13.5px;color:var(--ink-soft);margin-top:4px;}
   .quote-file{font-size:13px;margin-top:6px;}
 
-  .prod-card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;}
+  .prod-card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;transition:box-shadow .12s ease,border-color .12s ease;}
+  .prod-card:hover{box-shadow:0 4px 14px -8px rgba(15,35,64,.16);border-color:var(--ink-dim);}
   .prod-top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;}
   .prod-price{font-family:'JetBrains Mono';font-weight:700;color:var(--safety-deep);font-size:16px;}
 
@@ -439,9 +462,11 @@ async function toggleQuotes(jobId){
       }).join('') || '<div class="hint">ไม่มีรายการที่เสนอราคา</div>';
       return `<div class="bid-card">
         <div class="bid-card-top">
-          <span class="quote-company" style="font-weight:700;">${escapeHtml(b.companyName)}</span>
-          ${b.isEdited?'<span class="badge badge-edited">แก้ไขแล้ว</span>':''}
-          <span class="hint" style="margin:0;">โทร ${escapeHtml(b.companyPhone)} · ส่งล่าสุด ${fmtDate(b.updatedAt||b.submittedAt)}</span>
+          <div class="company-block">
+            <span class="cb-name">${escapeHtml(b.companyName)} ${b.isEdited?'<span class="badge badge-edited">แก้ไขแล้ว</span>':''}</span>
+            <span class="cb-phone">โทร ${escapeHtml(b.companyPhone)}</span>
+          </div>
+          <span class="hint" style="margin:0;">ส่งล่าสุด ${fmtDate(b.updatedAt||b.submittedAt)}</span>
         </div>
         ${rows}
         ${b.note?`<div class="quote-note">รายละเอียดเพิ่มเติม: ${escapeHtml(b.note)}</div>`:''}
@@ -555,7 +580,10 @@ function adminDataTabHtml(){
             ${p.isEdited?'<span class="badge badge-edited">แก้ไขแล้ว</span>':''}
             <span class="prod-price">${p.price!=null?fmtBaht(p.price):'-'}</span>
           </div>
-          <div class="quote-note">${escapeHtml(p.companyName)} · โทร ${escapeHtml(p.companyPhone)} · ส่งล่าสุด ${fmtDate(p.updatedAt||p.submittedAt)}</div>
+          <div class="company-block" style="margin-top:6px;">
+            <span class="cb-name">${escapeHtml(p.companyName)}</span>
+            <span class="cb-phone">โทร ${escapeHtml(p.companyPhone)} · ส่งล่าสุด ${fmtDate(p.updatedAt||p.submittedAt)}</span>
+          </div>
           ${p.description?`<div class="quote-note">${escapeHtml(p.description)}</div>`:''}
           ${p.fileURL?`<div class="quote-file">📎 <a href="${p.fileURL}" target="_blank" rel="noopener">${escapeHtml(p.fileName||'เอกสารแนบ/รูปภาพ')}</a></div>`:''}
           <div style="margin-top:8px;"><button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">ลบรายการนี้</button></div>
@@ -574,7 +602,8 @@ async function deleteProduct(id){
 
 /* =========================================================
    VENDOR PORTAL (ลิงก์เดียว ?vendor=1) — บริษัทดูได้/กรอกได้อย่างเดียว
-   ทุกคนเห็นชื่อบริษัท ผลิตภัณฑ์ เบอร์โทร ยกเว้น "ราคา" ที่เห็นเฉพาะแอดมิน
+   บริษัทอื่นเห็นได้เฉพาะชื่อบริษัทและผลิตภัณฑ์ ส่วน "ราคา" และเบอร์โทร
+   เห็นเฉพาะแอดมินเท่านั้น
 ========================================================= */
 let VENDOR_STATE = { tab:'bid', companyName:'', companyPhone:'', categories:[], jobs:[], activeJobId:null, activeJob:null,
   publicBids:[], existingBid:null, editingProductId:null, myProducts:[], dataCat:'all', catalog:[] };
@@ -684,14 +713,14 @@ function drawVendorJobDetailBody(){
     </div>
     <div class="card">
       <span class="eyebrow">เสนอผลิตภัณฑ์และราคาต่อรายการสเปค</span>
-      ${existing?`<div class="hint" style="color:var(--ok);margin-top:0;">พบข้อมูลที่เคยส่งไว้ ระบบดึงมาให้แล้ว แก้ไขแล้วกดส่งซ้ำได้เลย</div>`:''}
+      <p class="hint" style="margin-top:0;">แต่ละรายการเป็นใบเสนอราคาแยกกัน กรอกและกดส่งทีละรายการได้เลย ไม่จำเป็นต้องเสนอครบทุกรายการ</p>
       ${catIds.map(cid=>`
         <div class="spec-group-title">${escapeHtml(vCatName(cid))}</div>
         ${items.filter(i=>i.categoryId===cid).map(it=>{
           const prev = existing && existing.bids && existing.bids[it.id];
           const offers = pub.filter(b=>b.bids && b.bids[it.id]).map(b=>`${escapeHtml(b.companyName)} — ${escapeHtml((b.bids[it.id].product||'ไม่ระบุผลิตภัณฑ์'))}`);
           return `
-          <div class="item-bid-input-group">
+          <div class="item-bid-input-group ${prev?'is-filled':''}" id="itemcard_${it.id}">
             <div class="item-title">${escapeHtml(it.name)}</div>
             <div class="item-detail">${[it.spec, it.unit?('หน่วย: '+it.unit):'', it.qty?('จำนวน: '+it.qty):''].filter(Boolean).join(' · ')||'-'}</div>
             <div class="item-offers">${offers.length? '<b>บริษัทที่เสนอแล้ว:</b> '+offers.join(' · ') : 'ยังไม่มีบริษัทเสนอรายการนี้'}</div>
@@ -699,53 +728,97 @@ function drawVendorJobDetailBody(){
               <div><label style="margin-top:0;">ผลิตภัณฑ์/ยี่ห้อที่เสนอ</label><input id="bidprod_${it.id}" placeholder="เช่น กระเบื้อง Cotto รุ่น..." value="${prev?escapeHtml(prev.product||''):''}"></div>
               <div><label style="margin-top:0;">ราคา (บาท) — แอดมินเห็นเท่านั้น</label><input id="bidprice_${it.id}" type="number" min="0" step="0.01" placeholder="0.00" value="${prev&&prev.price!=null?prev.price:''}"></div>
             </div>
+            <button class="btn btn-primary btn-item-submit" id="itembtn_${it.id}" onclick="submitItemBid('${VENDOR_STATE.activeJobId}','${it.id}')">${prev?'แก้ไข/ส่งราคารายการนี้อีกครั้ง':'ส่งใบเสนอราคารายการนี้'}</button>
+            <div class="item-submit-msg" id="itemmsg_${it.id}"></div>
           </div>`;
         }).join('')}
       `).join('') || '<div class="hint">โครงการนี้ยังไม่มีรายการสเปค</div>'}
-      <label>รายละเอียดเพิ่มเติมของใบเสนอราคา (ไม่บังคับ)</label>
+    </div>
+    <div class="card">
+      <span class="eyebrow">รายละเอียดเพิ่มเติม (ไม่บังคับ)</span>
+      <p class="hint" style="margin-top:0;">ใช้สำหรับเงื่อนไข ระยะเวลาส่งมอบ หรือแนบไฟล์ใบเสนอราคารวม — แยกจากราคารายรายการด้านบน</p>
+      <label>รายละเอียดเพิ่มเติมของใบเสนอราคา</label>
       <textarea id="bidNote" placeholder="เงื่อนไข ระยะเวลาส่งมอบ ฯลฯ">${existing?escapeHtml(existing.note||''):''}</textarea>
-      <label>แนบไฟล์ใบเสนอราคา (ไม่บังคับ, แอดมินเห็นเท่านั้น)</label>
+      <label>แนบไฟล์ใบเสนอราคา (แอดมินเห็นเท่านั้น)</label>
       <input id="bidFile" type="file" accept=".pdf,image/*">
       ${existing&&existing.fileURL?`<div class="quote-file">มีไฟล์เดิมอยู่แล้ว (แนบไฟล์ใหม่เพื่อแทนที่)</div>`:''}
-      <button class="btn btn-primary" style="width:100%;margin-top:18px;" id="submitBidBtn" onclick="submitBid('${VENDOR_STATE.activeJobId}')">${existing?'ส่งราคาอีกครั้ง (แก้ไข)':'ส่งใบเสนอราคา'}</button>
-      <div class="hint" id="submitBidMsg" style="margin-top:10px;"></div>
+      <button class="btn" style="width:100%;margin-top:16px;" id="submitBidExtraBtn" onclick="submitBidExtra('${VENDOR_STATE.activeJobId}')">บันทึกรายละเอียดเพิ่มเติม</button>
+      <div class="hint" id="submitBidExtraMsg" style="margin-top:10px;"></div>
     </div>`;
 }
 
-async function submitBid(jobId){
+/* ส่งราคาทีละรายการสเปค — แต่ละรายการเป็นใบเสนอราคาแยกอิสระ ไม่ต้องกรอกครบทุกรายการ */
+async function submitItemBid(jobId, itemId){
   const phone = requirePhone(); if(!phone) return;
-  const job = VENDOR_STATE.activeJob;
-  const items = job.items || [];
-  const btn = document.getElementById('submitBidBtn');
-  const msg = document.getElementById('submitBidMsg');
-  btn.disabled = true; btn.textContent = 'กำลังส่ง…'; msg.textContent='';
-
-  const bids = {};
-  items.forEach(it=>{
-    const prodEl = document.getElementById('bidprod_'+it.id);
-    const priceEl = document.getElementById('bidprice_'+it.id);
-    const priceVal = priceEl ? parseFloat(priceEl.value) : NaN;
-    const prodVal = prodEl ? prodEl.value.trim() : '';
-    if(!isNaN(priceVal) || prodVal){
-      const entry = { product: prodVal };
-      if(!isNaN(priceVal)) entry.price = priceVal;
-      bids[it.id] = entry;
-    }
-  });
-  if(Object.keys(bids).length===0){
-    msg.style.color='var(--flame)'; msg.textContent='กรุณาเสนอราคาอย่างน้อย 1 รายการ';
-    btn.disabled=false; btn.textContent = VENDOR_STATE.existingBid?'ส่งราคาอีกครั้ง (แก้ไข)':'ส่งใบเสนอราคา';
+  const prodEl = document.getElementById('bidprod_'+itemId);
+  const priceEl = document.getElementById('bidprice_'+itemId);
+  const btn = document.getElementById('itembtn_'+itemId);
+  const msg = document.getElementById('itemmsg_'+itemId);
+  const card = document.getElementById('itemcard_'+itemId);
+  const priceVal = priceEl ? parseFloat(priceEl.value) : NaN;
+  const prodVal = prodEl ? prodEl.value.trim() : '';
+  if(isNaN(priceVal) && !prodVal){
+    msg.style.color='var(--flame)'; msg.textContent='กรุณากรอกผลิตภัณฑ์หรือราคาก่อนส่ง';
     return;
   }
-  const note = document.getElementById('bidNote').value.trim();
-  const fileInput = document.getElementById('bidFile');
+  const prevBtnText = btn.textContent;
+  btn.disabled = true; btn.textContent = 'กำลังส่ง…'; msg.style.color='var(--ink-soft)'; msg.textContent='';
+
+  const entry = { product: prodVal };
+  if(!isNaN(priceVal)) entry.price = priceVal;
 
   const quoteId = jobId+'_'+phone;
   const quoteRef = db.collection('quotes').doc(quoteId);
   const pubRef = db.collection('publicBids').doc(quoteId);
   try{
     const existing = await quoteRef.get();
-    const isEdit = existing.exists;
+    const wasEdit = existing.exists;
+    const payload = {
+      jobId, companyName: VENDOR_STATE.companyName.trim(), companyPhone: VENDOR_STATE.companyPhone.trim(),
+      bids: { [itemId]: entry },
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: wasEdit
+    };
+    if(wasEdit){ payload.firstSubmittedAt = existing.data().firstSubmittedAt || existing.data().submittedAt || firebase.firestore.FieldValue.serverTimestamp(); }
+    else { payload.submittedAt = firebase.firestore.FieldValue.serverTimestamp(); payload.firstSubmittedAt = firebase.firestore.FieldValue.serverTimestamp(); }
+    await quoteRef.set(payload, {merge:true});
+
+    await pubRef.set({
+      jobId, companyName: VENDOR_STATE.companyName.trim(), companyPhone: VENDOR_STATE.companyPhone.trim(),
+      bids: { [itemId]: { product: entry.product || '' } },
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: wasEdit,
+      submittedAt: payload.firstSubmittedAt || firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+
+    msg.style.color='var(--ok)'; msg.textContent = '✓ ส่งราคารายการนี้เรียบร้อยแล้ว';
+    toast('บันทึกราคารายการนี้แล้ว');
+    if(!VENDOR_STATE.existingBid) VENDOR_STATE.existingBid = { bids:{} };
+    if(!VENDOR_STATE.existingBid.bids) VENDOR_STATE.existingBid.bids = {};
+    VENDOR_STATE.existingBid.bids[itemId] = entry;
+    card?.classList.add('is-filled');
+    btn.textContent = 'แก้ไข/ส่งราคารายการนี้อีกครั้ง';
+  }catch(e){
+    msg.style.color='var(--flame)'; msg.textContent = 'เกิดข้อผิดพลาด: ' + (e.message||e);
+    btn.textContent = prevBtnText;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+/* บันทึกรายละเอียดเพิ่มเติม/ไฟล์แนบของใบเสนอราคา — แยกจากราคารายรายการ */
+async function submitBidExtra(jobId){
+  const phone = requirePhone(); if(!phone) return;
+  const btn = document.getElementById('submitBidExtraBtn');
+  const msg = document.getElementById('submitBidExtraMsg');
+  const note = document.getElementById('bidNote').value.trim();
+  const fileInput = document.getElementById('bidFile');
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก…'; msg.textContent='';
+
+  const quoteId = jobId+'_'+phone;
+  const quoteRef = db.collection('quotes').doc(quoteId);
+  const pubRef = db.collection('publicBids').doc(quoteId);
+  try{
+    const existing = await quoteRef.get();
+    const wasEdit = existing.exists;
     let fileURL = existing.exists ? existing.data().fileURL||null : null;
     let fileName = existing.exists ? existing.data().fileName||null : null;
     const file = fileInput.files[0];
@@ -753,34 +826,33 @@ async function submitBid(jobId){
       btn.textContent = 'กำลังอัปโหลดไฟล์แนบ…';
       const uploaded = await uploadToCloudinary(file, `quotes/${jobId}`);
       fileURL = uploaded.url; fileName = uploaded.name;
-      btn.textContent = 'กำลังส่ง…';
+      btn.textContent = 'กำลังบันทึก…';
     }
     const payload = {
       jobId, companyName: VENDOR_STATE.companyName.trim(), companyPhone: VENDOR_STATE.companyPhone.trim(),
-      note, fileURL, fileName, bids,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: isEdit
+      note, fileURL, fileName,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: wasEdit
     };
-    if(isEdit){ payload.firstSubmittedAt = existing.data().firstSubmittedAt || existing.data().submittedAt || firebase.firestore.FieldValue.serverTimestamp(); }
+    if(wasEdit){ payload.firstSubmittedAt = existing.data().firstSubmittedAt || existing.data().submittedAt || firebase.firestore.FieldValue.serverTimestamp(); }
     else { payload.submittedAt = firebase.firestore.FieldValue.serverTimestamp(); payload.firstSubmittedAt = firebase.firestore.FieldValue.serverTimestamp(); }
     await quoteRef.set(payload, {merge:true});
 
-    const publicBidsOnly = {};
-    Object.keys(bids).forEach(k=>{ publicBidsOnly[k] = { product: bids[k].product || '' }; });
     await pubRef.set({
       jobId, companyName: VENDOR_STATE.companyName.trim(), companyPhone: VENDOR_STATE.companyPhone.trim(),
-      note, bids: publicBidsOnly,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: isEdit,
+      note, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: wasEdit,
       submittedAt: payload.firstSubmittedAt || firebase.firestore.FieldValue.serverTimestamp()
     }, {merge:true});
 
-    msg.style.color='var(--ok)';
-    msg.textContent = isEdit ? '✓ แก้ไขใบเสนอราคาเรียบร้อยแล้ว' : '✓ ส่งใบเสนอราคาเรียบร้อยแล้ว ขอบคุณครับ';
-    toast('บันทึกใบเสนอราคาแล้ว');
-    VENDOR_STATE.existingBid = payload;
-    loadVendorJobDetail(jobId);
+    msg.style.color='var(--ok)'; msg.textContent = '✓ บันทึกรายละเอียดเพิ่มเติมแล้ว';
+    toast('บันทึกรายละเอียดแล้ว');
+    if(!VENDOR_STATE.existingBid) VENDOR_STATE.existingBid = {};
+    VENDOR_STATE.existingBid.note = note;
+    VENDOR_STATE.existingBid.fileURL = fileURL;
+    VENDOR_STATE.existingBid.fileName = fileName;
   }catch(e){
     msg.style.color='var(--flame)'; msg.textContent = 'เกิดข้อผิดพลาด: ' + (e.message||e);
-    btn.disabled=false; btn.textContent = VENDOR_STATE.existingBid?'ส่งราคาอีกครั้ง (แก้ไข)':'ส่งใบเสนอราคา';
+  }finally{
+    btn.disabled = false; btn.textContent = 'บันทึกรายละเอียดเพิ่มเติม';
   }
 }
 
@@ -790,7 +862,7 @@ function vendorDataTabHtml(){
   return `
     <div class="card">
       <span class="eyebrow">เสนอข้อมูลสินค้า/ผลิตภัณฑ์ (ไม่ผูกกับโครงการใด)</span>
-      <p class="hint" style="margin-top:0;">ใช้สำหรับนำเสนอสินค้าทั่วไปของบริษัทท่านตามหมวดงาน ไม่จำเป็นต้องเกี่ยวข้องกับโครงการที่เปิดประมูลอยู่ · ทุกคนเห็นชื่อบริษัท ผลิตภัณฑ์ และเบอร์โทรได้ แต่ “ราคา” เห็นเฉพาะแอดมิน</p>
+      <p class="hint" style="margin-top:0;">ใช้สำหรับนำเสนอสินค้าทั่วไปของบริษัทท่านตามหมวดงาน ไม่จำเป็นต้องเกี่ยวข้องกับโครงการที่เปิดประมูลอยู่ · บริษัทอื่นเห็นได้เฉพาะชื่อบริษัทและชื่อผลิตภัณฑ์ ส่วน “ราคา” และเบอร์โทรเห็นเฉพาะแอดมินเท่านั้น</p>
       <label>หมวดงาน</label><select id="pCategory">${catOpts}</select>
       <label>ชื่อสินค้า/ผลิตภัณฑ์ *</label><input id="pName" placeholder="เช่น กระเบื้องยาง SPC รุ่น...">
       <label>ราคา (บาท, ไม่บังคับ) — แอดมินเห็นเท่านั้น</label><input id="pPrice" type="number" min="0" step="0.01" placeholder="0.00">
@@ -835,7 +907,7 @@ function drawVendorCatalog(){
           <span class="badge badge-cat">${escapeHtml(vCatName(p.categoryId))}</span>
           ${p.isEdited?'<span class="badge badge-edited">แก้ไขแล้ว</span>':''}
         </div>
-        <div class="quote-note">${escapeHtml(p.companyName)} · โทร ${escapeHtml(p.companyPhone)} · ส่งล่าสุด ${fmtDate(p.updatedAt||p.submittedAt)}</div>
+        <div class="quote-note">เสนอโดย ${escapeHtml(p.companyName)}</div>
         ${p.description?`<div class="quote-note">${escapeHtml(p.description)}</div>`:''}
         ${p.fileURL?`<div class="quote-file">📎 <a href="${p.fileURL}" target="_blank" rel="noopener">${escapeHtml(p.fileName||'เอกสารแนบ/รูปภาพ')}</a></div>`:''}
       </div>`).join('');
