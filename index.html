@@ -230,6 +230,13 @@ const DEFAULT_CATEGORIES = [
   "งานครุภัณฑ์","งานตกแต่ง","งานฝ้า","งานฝ้าเพดาน","งานพื้น","งานภูมิทัศน์","งานหลังคา"
 ];
 
+/* ===================================================================
+   โหมดทดสอบ: ตั้งเป็น true เพื่อข้ามหน้าล็อกอินแอดมินไปก่อน (ใช้ตอนทดสอบ
+   ระบบที่ยังไม่มีข้อมูลจริง) ต้องเปลี่ยนกลับเป็น false ก่อนเปิดใช้งานจริง
+   พร้อมกับตั้ง Firestore Rules ให้รัดกุมอีกครั้ง — ดูคำอธิบายที่ผู้ช่วยส่งให้
+   =================================================================== */
+const TEST_MODE_NO_LOGIN = true;
+
 const app = document.getElementById('app');
 const topbarActions = document.getElementById('topbarActions');
 const topbarSub = document.getElementById('topbarSub');
@@ -268,11 +275,15 @@ if(jobParam){
   topbarSub.textContent = 'หน้าส่งใบเสนอราคา';
   renderPublicJob(jobParam);
 } else {
-  topbarSub.textContent = 'หลังบ้านผู้ดูแล';
-  auth.onAuthStateChanged(user=>{
-    if(user){ renderAdmin(user); }
-    else { renderLogin(); }
-  });
+  topbarSub.textContent = 'หลังบ้านผู้ดูแล' + (TEST_MODE_NO_LOGIN ? ' (โหมดทดสอบ ไม่ได้ล็อกอิน)' : '');
+  if(TEST_MODE_NO_LOGIN){
+    renderAdmin({email:'โหมดทดสอบ — ยังไม่ได้ล็อกอิน'});
+  } else {
+    auth.onAuthStateChanged(user=>{
+      if(user){ renderAdmin(user); }
+      else { renderLogin(); }
+    });
+  }
 }
 
 /* =========================================================
@@ -311,7 +322,9 @@ function doLogin(){
 let ADMIN_STATE = { categories:[], jobs:[], activeCat:'all', quotesCache:{} };
 
 function renderAdmin(user){
-  topbarActions.innerHTML = `
+  topbarActions.innerHTML = TEST_MODE_NO_LOGIN ? `
+    <span class="hint" style="margin:0;color:#a8710a;font-weight:600;">⚠ โหมดทดสอบ ไม่มีการล็อกอิน</span>
+  ` : `
     <div style="display:flex;align-items:center;gap:12px;">
       <span class="hint" style="margin:0;">${escapeHtml(user.email)}</span>
       <button class="btn btn-ghost btn-sm" onclick="auth.signOut()">ออกจากระบบ</button>
