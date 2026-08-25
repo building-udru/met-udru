@@ -40,7 +40,7 @@
     background:rgba(255,255,255,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);flex-wrap:wrap;gap:10px;}
   .brand{display:flex;align-items:center;gap:13px;}
   .brand .mark{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;
-    font-family:'Anuphan';font-weight:800;font-size:14px;flex:none;letter-spacing:-.02em;
+    font-family:'Anuphan';font-weight:800;font-size:17px;flex:none;letter-spacing:-.02em;
     background:linear-gradient(150deg, var(--safety), var(--safety-deep));box-shadow:0 6px 16px -6px rgba(224,99,30,.55);}
   .brand h1{font-size:17px;margin:0;font-weight:700;letter-spacing:-.01em;color:var(--ink);}
   .brand .sub{font-size:12px;color:var(--ink-soft);margin-top:2px;}
@@ -89,12 +89,17 @@
   .cat-chip.active{background:var(--ink);border-color:var(--ink);color:#fff;}
   .cat-chip.active:hover{border-color:var(--ink);color:#fff;filter:brightness(1.15);}
 
-  .tabbar{display:flex;gap:6px;background:var(--bg-3);border:1px solid var(--line);border-radius:14px;padding:5px;margin-bottom:20px;}
-  .tabbtn{flex:1;text-align:center;padding:11px 10px;border-radius:10px;font-weight:700;font-size:14.5px;cursor:pointer;color:var(--ink-soft);transition:background .15s ease,color .15s ease;}
+  .tabbar{display:flex;flex-direction:row;gap:6px;background:var(--bg-3);border:1px solid var(--line);border-radius:14px;padding:5px;margin-bottom:20px;}
+  .tabbtn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;text-align:center;padding:11px 10px;border-radius:10px;font-weight:700;font-size:14.5px;cursor:pointer;color:var(--ink-soft);transition:background .15s ease,color .15s ease,transform .1s ease;white-space:nowrap;}
+  .tabbtn .ico{font-size:16px;line-height:1;flex:none;}
   .tabbtn:hover{background:rgba(255,255,255,.6);color:var(--ink);}
   .tabbtn.active{background:#fff;color:var(--ink);box-shadow:0 4px 12px -6px rgba(15,35,64,.2);}
   .tabbtn.active:hover{background:#fff;}
-  .tabbtn .cnt{font-family:'JetBrains Mono';font-size:11px;color:var(--ink-dim);margin-left:4px;}
+  .tabbtn:active{transform:scale(.98);}
+  .tabbtn .cnt{font-family:'JetBrains Mono';font-size:11px;color:var(--ink-dim);margin-left:2px;}
+  @media(max-width:480px){
+    .tabbtn{font-size:13px;padding:10px 6px;gap:5px;}
+  }
 
   .job-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:16px 0;border-top:1px solid var(--line-soft);border-radius:10px;transition:background .12s ease;}
   .job-row:hover{background:var(--bg-3);}
@@ -305,7 +310,7 @@ let ADMIN_STATE = { tab:'bid', categories:[], jobs:[], products:[], activeCat:'a
 
 function renderAdmin(user){
   topbarActions.innerHTML = TEST_MODE_NO_LOGIN ? `
-    <span class="hint" style="margin:0;color:var(--warn);font-weight:600;">⚠ โหมดทดสอบ ไม่มีการล็อกอิน</span>
+    <span class="hint" style="margin:0;color:var(--warn);font-weight:600;">⚠️ โหมดทดสอบ ไม่มีการล็อกอิน</span>
   ` : `
     <div style="display:flex;align-items:center;gap:12px;">
       <span class="hint" style="margin:0;">${escapeHtml(user.email)}</span>
@@ -339,21 +344,21 @@ function drawAdminShell(){
   const vendorLink = location.origin + location.pathname + '?vendor=1';
   app.innerHTML = `
     <div class="card">
-      <span class="eyebrow">ลิงก์เดียวสำหรับทุกบริษัท</span>
+      <span class="eyebrow">🔗 ลิงก์เดียวสำหรับทุกบริษัท</span>
       <p class="hint" style="margin-top:0;">ส่งลิงก์นี้ให้บริษัททุกแห่ง ใช้ลิงก์เดียวกันทั้งหมด ฝั่งบริษัทจะแก้ไขหน้าเว็บเองไม่ได้ ทำได้แค่กรอกและส่งข้อมูลของตนเอง</p>
       <div class="link-box"><input readonly value="${vendorLink}" onclick="this.select()">
-        <button class="btn btn-ghost btn-sm" onclick="copyLink('${vendorLink}')">คัดลอกลิงก์</button></div>
+        <button class="btn btn-ghost btn-sm" onclick="copyLink('${vendorLink}')">📋 คัดลอกลิงก์</button></div>
     </div>
     <div class="tabbar">
-      <div class="tabbtn ${ADMIN_STATE.tab==='bid'?'active':''}" onclick="setAdminTab('bid')">ประมูลราคาโครงการ <span class="cnt">${ADMIN_STATE.jobs.length}</span></div>
-      <div class="tabbtn ${ADMIN_STATE.tab==='data'?'active':''}" onclick="setAdminTab('data')">คลังข้อมูลสินค้า <span class="cnt">${ADMIN_STATE.products.length}</span></div>
+      <div class="tabbtn ${ADMIN_STATE.tab==='bid'?'active':''}" onclick="setAdminTab('bid')"><span class="ico">📋</span>ประมูลราคาโครงการ <span class="cnt">${ADMIN_STATE.jobs.length}</span></div>
+      <div class="tabbtn ${ADMIN_STATE.tab==='data'?'active':''}" onclick="setAdminTab('data')"><span class="ico">📦</span>คลังข้อมูลสินค้า <span class="cnt">${ADMIN_STATE.products.length}</span></div>
     </div>
     <div id="adminTabContent"></div>
   `;
   drawAdminTabContent();
 }
 function setAdminTab(t){ ADMIN_STATE.tab = t; drawAdminShell(); }
-function copyLink(url){ navigator.clipboard.writeText(url).then(()=>toast('คัดลอกลิงก์แล้ว')); }
+function copyLink(url){ navigator.clipboard.writeText(url).then(()=>toast('📋 คัดลอกลิงก์แล้ว')); }
 
 function drawAdminTabContent(){
   const el = document.getElementById('adminTabContent');
@@ -375,16 +380,16 @@ function adminBidTabHtml(){
           const count = ADMIN_STATE.jobs.filter(j=>jobHasCat(j,c.id)).length;
           return `<span class="cat-chip ${activeCat===c.id?'active':''}" onclick="setCat('${c.id}')">${escapeHtml(c.name)} (${count})</span>`;
         }).join('')}
-        <span class="cat-chip" style="border-style:dashed;" onclick="promptNewCategory()">+ เพิ่มหมวดงาน</span>
+        <span class="cat-chip" style="border-style:dashed;" onclick="promptNewCategory()">➕ เพิ่มหมวดงาน</span>
       </div>
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <span class="eyebrow" style="margin:0;">รายการโครงการ</span>
-        <button class="btn btn-primary btn-sm" onclick="openJobModal()">+ สร้างโครงการใหม่</button>
+        <button class="btn btn-primary btn-sm" onclick="openJobModal()">➕ สร้างโครงการใหม่</button>
       </div>
       <div id="jobList">
-        ${jobs.length===0 ? `<div class="empty"><div class="disp">ยังไม่มีโครงการในหมวดนี้</div>กด “สร้างโครงการใหม่” แล้วกำหนดรายการสเปคที่ต้องการเปิดประมูล</div>` :
+        ${jobs.length===0 ? `<div class="empty"><div class="disp">📭 ยังไม่มีโครงการในหมวดนี้</div>กด “สร้างโครงการใหม่” แล้วกำหนดรายการสเปคที่ต้องการเปิดประมูล</div>` :
           jobs.map(j=>renderJobRow(j)).join('')}
       </div>
     </div>`;
@@ -398,14 +403,14 @@ function renderJobRow(j){
   return `
     <div class="job-row">
       <div>
-        <div class="job-title">${escapeHtml(j.title)} <span class="badge ${isOpen?'badge-open':'badge-closed'}">${isOpen?'เปิดรับ':'ปิดรับแล้ว'}</span></div>
-        <div class="job-meta">${items.length} รายการสเปค${j.deadline? ' · กำหนดส่งภายใน ' + escapeHtml(j.deadline):''} · สร้างเมื่อ ${fmtDate(j.createdAt)}</div>
+        <div class="job-title">${escapeHtml(j.title)} <span class="badge ${isOpen?'badge-open':'badge-closed'}">${isOpen?'🟢 เปิดรับ':'⚪ ปิดรับแล้ว'}</span></div>
+        <div class="job-meta">📄 ${items.length} รายการสเปค${j.deadline? ' · ⏰ กำหนดส่งภายใน ' + escapeHtml(j.deadline):''} · สร้างเมื่อ ${fmtDate(j.createdAt)}</div>
       </div>
       <div class="job-actions">
-        <button class="btn btn-sm" onclick="toggleQuotes('${j.id}')">ดูราคาที่เสนอ</button>
-        <button class="btn btn-ghost btn-sm" onclick="openJobModal('${j.id}')">แก้ไข</button>
-        <button class="btn btn-ghost btn-sm" onclick="toggleJobStatus('${j.id}','${isOpen?'closed':'open'}')">${isOpen?'ปิดรับงาน':'เปิดรับอีกครั้ง'}</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteJob('${j.id}')">ลบ</button>
+        <button class="btn btn-sm" onclick="toggleQuotes('${j.id}')">💰 ดูราคาที่เสนอ</button>
+        <button class="btn btn-ghost btn-sm" onclick="openJobModal('${j.id}')">✏️ แก้ไข</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleJobStatus('${j.id}','${isOpen?'closed':'open'}')">${isOpen?'🔒 ปิดรับงาน':'🔓 เปิดรับอีกครั้ง'}</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteJob('${j.id}')">🗑️ ลบ</button>
       </div>
     </div>
     <div id="quotes-${j.id}"></div>`;
@@ -427,7 +432,7 @@ async function deleteJob(jobId){
   await batch.commit();
   ADMIN_STATE.jobs = ADMIN_STATE.jobs.filter(j=>j.id!==jobId);
   drawAdminTabContent();
-  toast('ลบโครงการแล้ว');
+  toast('🗑️ ลบโครงการแล้ว');
 }
 
 let openQuotePanels = new Set();
@@ -465,8 +470,8 @@ async function toggleQuotes(jobId){
           ${offers.map(({b,bid})=>{
             const isLowest = bid.price === min;
             return `<div class="bid-item-row ${isLowest?'lowest':''}">
-              <span class="lp">${escapeHtml(b.companyName)} ${b.isEdited?'<span class="badge badge-edited">แก้ไขแล้ว</span>':''}${bid.product?' · เสนอ: '+escapeHtml(bid.product):''}</span>
-              <span class="rp">${bid.price!=null?fmtBaht(bid.price):'-'}${isLowest?' <span class="badge badge-lowest">ต่ำสุด</span>':''}</span>
+              <span class="lp">${escapeHtml(b.companyName)} ${b.isEdited?'<span class="badge badge-edited">✏️ แก้ไขแล้ว</span>':''}${bid.product?' · เสนอ: '+escapeHtml(bid.product):''}</span>
+              <span class="rp">${bid.price!=null?fmtBaht(bid.price):'-'}${isLowest?' <span class="badge badge-lowest">🏆 ต่ำสุด</span>':''}</span>
             </div>
             ${bid.note?`<div class="quote-note" style="margin:2px 0 6px;">รายละเอียด: ${escapeHtml(bid.note)}</div>`:''}
             ${bid.fileURL?`<div class="quote-file" style="margin-bottom:4px;">📎 <a href="${bid.fileURL}" target="_blank" rel="noopener">${escapeHtml(bid.fileName||'เอกสารแนบ')}</a></div>`:''}
@@ -481,7 +486,7 @@ async function toggleQuotes(jobId){
 function promptNewCategory(){
   const name = prompt('ชื่อหมวดงานใหม่ เช่น งานระบบไฟฟ้า');
   if(!name) return;
-  db.collection('categories').add({name, order: ADMIN_STATE.categories.length}).then(()=>{ toast('เพิ่มหมวดงานแล้ว'); loadAdminData(); });
+  db.collection('categories').add({name, order: ADMIN_STATE.categories.length}).then(()=>{ toast('✅ เพิ่มหมวดงานแล้ว'); loadAdminData(); });
 }
 
 /* ---- Job create/edit modal with dynamic spec items ---- */
@@ -495,17 +500,17 @@ function openJobModal(jobId){
   bg.className = 'modal-bg';
   bg.innerHTML = `
     <div class="modal">
-      <h3 class="disp" style="margin-top:0;">${editing?'แก้ไขโครงการ':'สร้างโครงการใหม่'}</h3>
+      <h3 class="disp" style="margin-top:0;">${editing?'✏️ แก้ไขโครงการ':'📋 สร้างโครงการใหม่'}</h3>
       <label>ชื่อโครงการ</label><input id="newJobTitle" placeholder="เช่น ปรับปรุงอาคารเรียนรวม 1" value="${editing?escapeHtml(job.title):''}">
       <label>รายละเอียด (ไม่บังคับ)</label><textarea id="newJobDesc" placeholder="ขอบเขตงาน เงื่อนไข ฯลฯ">${editing?escapeHtml(job.description||''):''}</textarea>
       <label>กำหนดส่งราคาภายใน (ไม่บังคับ)</label><input id="newJobDeadline" placeholder="เช่น 30 ก.ย. 2569" value="${editing?escapeHtml(job.deadline||''):''}">
       <label style="margin-bottom:2px;">รายการสเปคของโครงการ</label>
       <div class="hint" style="margin-top:0;margin-bottom:8px;">แต่ละรายการเลือก “หมวดงาน” เช่น พื้น แล้วตั้งชื่อรายการ เช่น “กระเบื้อง 60×60” — บริษัทจะเสนอผลิตภัณฑ์และราคาตามสเปคที่ตั้งไว้นี้</div>
       <div id="specRows"></div>
-      <button class="btn btn-ghost btn-sm" type="button" onclick="addSpecRow()">+ เพิ่มรายการสเปค</button>
+      <button class="btn btn-ghost btn-sm" type="button" onclick="addSpecRow()">➕ เพิ่มรายการสเปค</button>
       <div style="display:flex;gap:10px;margin-top:20px;">
-        <button class="btn btn-ghost" style="flex:1;" onclick="this.closest('.modal-bg').remove()">ยกเลิก</button>
-        <button class="btn btn-primary" style="flex:1;" onclick="saveJob(${editing?`'${jobId}'`:'null'})">${editing?'บันทึกการแก้ไข':'สร้างโครงการ'}</button>
+        <button class="btn btn-ghost" style="flex:1;" onclick="this.closest('.modal-bg').remove()">✕ ยกเลิก</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="saveJob(${editing?`'${jobId}'`:'null'})">${editing?'💾 บันทึกการแก้ไข':'✅ สร้างโครงการ'}</button>
       </div>
     </div>`;
   document.body.appendChild(bg);
@@ -518,7 +523,7 @@ function drawSpecRows(){
   const el = document.getElementById('specRows');
   if(!el) return;
   const catOpts = c => ADMIN_STATE.categories.map(cat=>`<option value="${cat.id}" ${c===cat.id?'selected':''}>${escapeHtml(cat.name)}</option>`).join('');
-  el.innerHTML = SPEC_DRAFT.length===0 ? '<div class="hint" style="margin-bottom:10px;">ยังไม่มีรายการสเปค กด “เพิ่มรายการสเปค” เพื่อเริ่ม</div>' :
+  el.innerHTML = SPEC_DRAFT.length===0 ? '<div class="hint" style="margin-bottom:10px;">📭 ยังไม่มีรายการสเปค กด “เพิ่มรายการสเปค” เพื่อเริ่ม</div>' :
     SPEC_DRAFT.map(s=>`
       <div class="spec-row">
         <div class="fields">
@@ -528,7 +533,7 @@ function drawSpecRows(){
           <input placeholder="หน่วย เช่น ตร.ม." value="${escapeHtml(s.unit)}" oninput="updateSpecField('${s.id}','unit',this.value)">
           <input placeholder="จำนวน" value="${escapeHtml(s.qty)}" oninput="updateSpecField('${s.id}','qty',this.value)">
         </div>
-        <button class="btn btn-danger btn-sm rm" type="button" onclick="removeSpecRow('${s.id}')">ลบ</button>
+        <button class="btn btn-danger btn-sm rm" type="button" onclick="removeSpecRow('${s.id}')">🗑️</button>
       </div>`).join('');
 }
 async function saveJob(jobId){
@@ -539,10 +544,10 @@ async function saveJob(jobId){
   const items = SPEC_DRAFT.filter(s=>s.name.trim()).map(s=>({...s, name: s.name.trim()}));
   if(jobId){
     await db.collection('jobs').doc(jobId).update({title, description, deadline, items});
-    toast('บันทึกการแก้ไขแล้ว');
+    toast('✅ บันทึกการแก้ไขแล้ว');
   } else {
     await db.collection('jobs').add({title, description, deadline, items, status:'open', createdAt: firebase.firestore.FieldValue.serverTimestamp()});
-    toast('สร้างโครงการแล้ว');
+    toast('✅ สร้างโครงการแล้ว');
   }
   document.querySelector('.modal-bg')?.remove();
   loadAdminData();
@@ -573,22 +578,22 @@ function adminDataTabHtml(){
     </div>
     <div class="card">
       <span class="eyebrow">สินค้าที่บริษัทเสนอเข้ามาอิสระ (${list.length}) — เห็นราคาได้เฉพาะแอดมิน</span>
-      ${list.length===0 ? `<div class="empty"><div class="disp">ยังไม่มีข้อมูลสินค้า</div>ให้บริษัทเข้าลิงก์เดียวกันแล้วเลือกแท็บ “เสนอสินค้าทั่วไป”</div>` :
+      ${list.length===0 ? `<div class="empty"><div class="disp">📭 ยังไม่มีข้อมูลสินค้า</div>ให้บริษัทเข้าลิงก์เดียวกันแล้วเลือกแท็บ “เสนอสินค้าทั่วไป”</div>` :
         list.map(p=>`
         <div class="prod-card">
           <div class="prod-top">
             <span class="quote-company" style="font-weight:700;">${escapeHtml(p.productName)}</span>
-            <span class="badge badge-cat">${escapeHtml(catName(p.categoryId))}</span>
-            ${p.isEdited?'<span class="badge badge-edited">แก้ไขแล้ว</span>':''}
+            <span class="badge badge-cat">🏷️ ${escapeHtml(catName(p.categoryId))}</span>
+            ${p.isEdited?'<span class="badge badge-edited">✏️ แก้ไขแล้ว</span>':''}
             <span class="prod-price">${p.price!=null?fmtBaht(p.price):'-'}</span>
           </div>
           <div class="company-block" style="margin-top:6px;">
             <span class="cb-name">${escapeHtml(p.companyName)}</span>
-            <span class="cb-phone">โทร ${escapeHtml(p.companyPhone)} · ส่งล่าสุด ${fmtDate(p.updatedAt||p.submittedAt)}</span>
+            <span class="cb-phone">☎️ ${escapeHtml(p.companyPhone)} · ส่งล่าสุด ${fmtDate(p.updatedAt||p.submittedAt)}</span>
           </div>
           ${p.description?`<div class="quote-note">${escapeHtml(p.description)}</div>`:''}
           ${p.fileURL?`<div class="quote-file">📎 <a href="${p.fileURL}" target="_blank" rel="noopener">${escapeHtml(p.fileName||'เอกสารแนบ/รูปภาพ')}</a></div>`:''}
-          <div style="margin-top:8px;"><button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">ลบรายการนี้</button></div>
+          <div style="margin-top:8px;"><button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">🗑️ ลบรายการนี้</button></div>
         </div>`).join('')}
     </div>`;
 }
@@ -599,7 +604,7 @@ async function deleteProduct(id){
   await db.collection('publicProducts').doc(id).delete().catch(()=>{});
   ADMIN_STATE.products = ADMIN_STATE.products.filter(p=>p.id!==id);
   drawAdminTabContent();
-  toast('ลบรายการแล้ว');
+  toast('🗑️ ลบรายการแล้ว');
 }
 
 /* =========================================================
@@ -623,8 +628,8 @@ function vCatName(id){ const c = VENDOR_STATE.categories.find(c=>c.id===id); ret
 function drawVendorShell(){
   app.innerHTML = `
     <div class="tabbar">
-      <div class="tabbtn ${VENDOR_STATE.tab==='bid'?'active':''}" onclick="setVendorTab('bid')">ประมูลราคาโครงการ</div>
-      <div class="tabbtn ${VENDOR_STATE.tab==='data'?'active':''}" onclick="setVendorTab('data')">เสนอสินค้าทั่วไป</div>
+      <div class="tabbtn ${VENDOR_STATE.tab==='bid'?'active':''}" onclick="setVendorTab('bid')"><span class="ico">📋</span>ประมูลราคาโครงการ</div>
+      <div class="tabbtn ${VENDOR_STATE.tab==='data'?'active':''}" onclick="setVendorTab('data')"><span class="ico">🏷️</span>เสนอสินค้าทั่วไป</div>
     </div>
     <div id="vendorContent"></div>
   `;
@@ -663,14 +668,14 @@ function vendorJobListHtml(){
   const jobs = VENDOR_STATE.jobs;
   return `<div class="card">
     <span class="eyebrow">โครงการที่เปิดรับราคา (${jobs.length})</span>
-    ${jobs.length===0 ? `<div class="empty"><div class="disp">ยังไม่มีโครงการเปิดรับราคาในขณะนี้</div></div>` :
+    ${jobs.length===0 ? `<div class="empty"><div class="disp">📭 ยังไม่มีโครงการเปิดรับราคาในขณะนี้</div></div>` :
       jobs.map(j=>`
       <div class="job-row">
         <div>
           <div class="job-title">${escapeHtml(j.title)}</div>
-          <div class="job-meta">${(j.items||[]).length} รายการสเปค${j.deadline?' · กำหนดส่งภายใน '+escapeHtml(j.deadline):''}</div>
+          <div class="job-meta">📄 ${(j.items||[]).length} รายการสเปค${j.deadline?' · ⏰ กำหนดส่งภายใน '+escapeHtml(j.deadline):''}</div>
         </div>
-        <div class="job-actions"><button class="btn btn-primary btn-sm" onclick="openVendorJob('${j.id}')">ดูรายละเอียด / เสนอราคา</button></div>
+        <div class="job-actions"><button class="btn btn-primary btn-sm" onclick="openVendorJob('${j.id}')">👀 ดูรายละเอียด / เสนอราคา</button></div>
       </div>`).join('')}
   </div>`;
 }
@@ -738,8 +743,8 @@ function drawVendorJobDetailBody(){
       <button class="btn btn-ghost btn-sm" onclick="backToJobList()">← กลับไปยังรายการโครงการ</button>
       <h2 class="disp" style="margin:12px 0 6px;">${escapeHtml(job.title)}</h2>
       ${job.description?`<p style="white-space:pre-wrap;color:var(--ink-soft);">${escapeHtml(job.description)}</p>`:''}
-      ${job.deadline?`<p class="status-line">กำหนดส่งราคาภายใน: <strong>${escapeHtml(job.deadline)}</strong></p>`:''}
-      <p class="hint" style="color:var(--warn);">ทุกบริษัทเห็นชื่อบริษัทและผลิตภัณฑ์ที่เสนอของกันและกันได้ แต่จะไม่เห็น “ราคา” ที่บริษัทอื่นเสนอเด็ดขาด — ราคาจะแสดงเฉพาะแอดมินเท่านั้น</p>
+      ${job.deadline?`<p class="status-line">⏰ กำหนดส่งราคาภายใน: <strong>${escapeHtml(job.deadline)}</strong></p>`:''}
+      <p class="hint" style="color:var(--warn);">🔒 ทุกบริษัทเห็นชื่อบริษัทและผลิตภัณฑ์ที่เสนอของกันและกันได้ แต่จะไม่เห็น “ราคา” ที่บริษัทอื่นเสนอเด็ดขาด — ราคาจะแสดงเฉพาะแอดมินเท่านั้น</p>
     </div>
     <div class="card">
       <span class="eyebrow">เสนอผลิตภัณฑ์และราคาต่อรายการสเปค</span>
@@ -751,7 +756,7 @@ function drawVendorJobDetailBody(){
           const offerRows = pub.filter(b=>b.bids && b.bids[it.id]).map(b=>{
             const ob = b.bids[it.id];
             return `<div class="bid-item-row">
-              <span class="lp"><b>${escapeHtml(b.companyName)}</b>${b.isEdited?' <span class="badge badge-edited">แก้ไขแล้ว</span>':''}${ob.product?' · เสนอ: '+escapeHtml(ob.product):''}</span>
+              <span class="lp"><b>${escapeHtml(b.companyName)}</b>${b.isEdited?' <span class="badge badge-edited">✏️ แก้ไขแล้ว</span>':''}${ob.product?' · เสนอ: '+escapeHtml(ob.product):''}</span>
               <span class="rp">${ob.priceMask?ob.priceMask+' บาท':'-'}</span>
             </div>
             ${ob.note?`<div class="quote-note" style="margin:2px 0 6px;">รายละเอียด: ${escapeHtml(ob.note)}</div>`:''}
@@ -761,7 +766,7 @@ function drawVendorJobDetailBody(){
           <div class="item-bid-input-group ${prev?'is-filled':''}" id="itemcard_${it.id}">
             <div class="item-title">${escapeHtml(it.name)}</div>
             <div class="item-detail">${[it.spec, it.unit?('หน่วย: '+it.unit):'', it.qty?('จำนวน: '+it.qty):''].filter(Boolean).join(' · ')||'-'}</div>
-            ${offerRows.length ? `<button class="btn btn-ghost btn-sm" type="button" style="margin-bottom:14px;" onclick="toggleOffers('${it.id}')" id="offersbtn_${it.id}">ดูข้อมูลที่บริษัทอื่นเสนอ (${offerRows.length})</button>` : '<div class="hint" style="margin-bottom:14px;">ยังไม่มีบริษัทเสนอรายการนี้</div>'}
+            ${offerRows.length ? `<button class="btn btn-ghost btn-sm" type="button" style="margin-bottom:14px;" onclick="toggleOffers('${it.id}')" id="offersbtn_${it.id}">👀 ดูข้อมูลที่บริษัทอื่นเสนอ (${offerRows.length})</button>` : '<div class="hint" style="margin-bottom:14px;">ยังไม่มีบริษัทเสนอรายการนี้</div>'}
             <div class="item-offers" id="offerspanel_${it.id}" style="display:none;">${offerRows.join('')}</div>
             <div class="row">
               <div><label style="margin-top:0;">ชื่อบริษัทของท่าน</label><input id="bidcompany_${it.id}" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName||'')}" oninput="syncCompanyField(this.value,'name')"></div>
@@ -776,7 +781,7 @@ function drawVendorJobDetailBody(){
             <label>แนบไฟล์ใบเสนอราคา (แอดมินเห็นเท่านั้น)</label>
             <input id="biditemfile_${it.id}" type="file" accept=".pdf,image/*">
             ${prev&&prev.fileURL?`<div class="quote-file">มีไฟล์เดิมอยู่แล้ว (แนบไฟล์ใหม่เพื่อแทนที่): <a href="${prev.fileURL}" target="_blank" rel="noopener">${escapeHtml(prev.fileName||'ไฟล์')}</a></div>`:''}
-            <button class="btn btn-primary btn-item-submit" id="itembtn_${it.id}" onclick="submitItemBid('${VENDOR_STATE.activeJobId}','${it.id}')">${prev?'แก้ไข/ส่งราคารายการนี้อีกครั้ง':'ส่งใบเสนอราคารายการนี้'}</button>
+            <button class="btn btn-primary btn-item-submit" id="itembtn_${it.id}" onclick="submitItemBid('${VENDOR_STATE.activeJobId}','${it.id}')">${prev?'✏️ แก้ไข/ส่งราคารายการนี้อีกครั้ง':'📤 ส่งใบเสนอราคารายการนี้'}</button>
             <div class="item-submit-msg" id="itemmsg_${it.id}"></div>
           </div>`;
         }).join('')}
@@ -851,13 +856,13 @@ async function submitItemBid(jobId, itemId){
 
     VENDOR_STATE.companyName = companyVal;
     VENDOR_STATE.companyPhone = phoneRaw;
-    msg.style.color='var(--ok)'; msg.textContent = '✓ ส่งราคารายการนี้เรียบร้อยแล้ว';
-    toast('บันทึกราคารายการนี้แล้ว');
+    msg.style.color='var(--ok)'; msg.textContent = '✅ ส่งราคารายการนี้เรียบร้อยแล้ว';
+    toast('✅ บันทึกราคารายการนี้แล้ว');
     if(!VENDOR_STATE.existingBid) VENDOR_STATE.existingBid = { bids:{} };
     if(!VENDOR_STATE.existingBid.bids) VENDOR_STATE.existingBid.bids = {};
     VENDOR_STATE.existingBid.bids[itemId] = entry;
     card?.classList.add('is-filled');
-    btn.textContent = 'แก้ไข/ส่งราคารายการนี้อีกครั้ง';
+    btn.textContent = '✏️ แก้ไข/ส่งราคารายการนี้อีกครั้ง';
   }catch(e){
     msg.style.color='var(--flame)'; msg.textContent = 'เกิดข้อผิดพลาด: ' + (e.message||e);
     btn.textContent = prevBtnText;
@@ -871,7 +876,7 @@ function vendorDataTabHtml(){
   const catOpts = VENDOR_STATE.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
   return `
     <div class="card">
-      <span class="eyebrow">เสนอข้อมูลสินค้า/ผลิตภัณฑ์ (ไม่ผูกกับโครงการใด)</span>
+      <span class="eyebrow">🏷️ เสนอข้อมูลสินค้า/ผลิตภัณฑ์ (ไม่ผูกกับโครงการใด)</span>
       <p class="hint" style="margin-top:0;">ใช้สำหรับนำเสนอสินค้าทั่วไปของบริษัทท่านตามหมวดงาน ไม่จำเป็นต้องเกี่ยวข้องกับโครงการที่เปิดประมูลอยู่ · บริษัทอื่นเห็นได้เฉพาะชื่อบริษัทและชื่อผลิตภัณฑ์ ส่วน “ราคา” และเบอร์โทรเห็นเฉพาะแอดมินเท่านั้น</p>
       <div class="row">
         <div><label style="margin-top:0;">ชื่อบริษัทของท่าน</label><input id="pCompany" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName||'')}" oninput="syncCompanyField(this.value,'name')"></div>
@@ -882,22 +887,22 @@ function vendorDataTabHtml(){
       <label>ราคา (บาท, ไม่บังคับ) — แอดมินเห็นเท่านั้น</label><input id="pPrice" type="number" min="0" step="0.01" placeholder="0.00">
       <label>รายละเอียด (ไม่บังคับ)</label><textarea id="pDesc" placeholder="สเปค คุณสมบัติ เงื่อนไข ฯลฯ"></textarea>
       <label>แนบไฟล์/รูปสินค้า (ไม่บังคับ)</label><input id="pFile" type="file" accept=".pdf,image/*">
-      <button class="btn btn-primary" style="width:100%;margin-top:18px;" id="submitProdBtn" onclick="submitProduct()">บันทึกข้อมูลสินค้า</button>
+      <button class="btn btn-primary" style="width:100%;margin-top:18px;" id="submitProdBtn" onclick="submitProduct()">💾 บันทึกข้อมูลสินค้า</button>
       <div class="hint" id="submitProdMsg" style="margin-top:10px;"></div>
     </div>
     <div class="card">
-      <span class="eyebrow">ค้นหาสินค้าที่เคยส่ง (ดูราคาของตัวเองได้)</span>
+      <span class="eyebrow">🔍 ค้นหาสินค้าที่เคยส่ง (ดูราคาของตัวเองได้)</span>
       <p class="hint" style="margin-top:0;">ค้นหาจากชื่อบริษัท เบอร์โทร หรือชื่อผลิตภัณฑ์ — กรอกอย่างน้อยหนึ่งช่อง</p>
       <div class="row">
         <div><label style="margin-top:0;">ชื่อบริษัท</label><input id="searchCompany" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName)}"></div>
         <div><label style="margin-top:0;">เบอร์ติดต่อ</label><input id="searchPhone" placeholder="08x-xxx-xxxx" value="${escapeHtml(VENDOR_STATE.companyPhone)}"></div>
       </div>
       <label>ชื่อผลิตภัณฑ์</label><input id="searchProductName" placeholder="พิมพ์ชื่อผลิตภัณฑ์ที่ต้องการค้นหา">
-      <button class="btn btn-primary btn-sm" style="margin-top:14px;" onclick="loadMyProducts()">ค้นหา</button>
+      <button class="btn btn-primary btn-sm" style="margin-top:14px;" onclick="loadMyProducts()">🔍 ค้นหา</button>
       <div id="myProductsList" class="hint" style="margin-top:10px;">กรอกข้อมูลด้านบน แล้วกด “ค้นหา” เพื่อดูและแก้ไขรายการที่เคยส่ง</div>
     </div>
     <div class="card">
-      <span class="eyebrow">คลังสินค้าทั้งหมด (มองเห็นได้ทุกบริษัท ไม่แสดงราคา)</span>
+      <span class="eyebrow">📦 คลังสินค้าทั้งหมด (มองเห็นได้ทุกบริษัท ไม่แสดงราคา)</span>
       <div style="margin-bottom:10px;">
         <span class="cat-chip ${VENDOR_STATE.dataCat==='all'?'active':''}" onclick="setDataCat('all')">ทั้งหมด</span>
         ${VENDOR_STATE.categories.map(c=>`<span class="cat-chip ${VENDOR_STATE.dataCat===c.id?'active':''}" onclick="setDataCat('${c.id}')">${escapeHtml(c.name)}</span>`).join('')}
@@ -917,13 +922,13 @@ function drawVendorCatalog(){
   if(!el) return;
   const cat = VENDOR_STATE.dataCat;
   const list = VENDOR_STATE.catalog.filter(p=> cat==='all' || p.categoryId===cat);
-  el.innerHTML = list.length===0 ? '<div class="hint">ยังไม่มีข้อมูลสินค้าในหมวดนี้</div>' :
+  el.innerHTML = list.length===0 ? '<div class="hint">📭 ยังไม่มีข้อมูลสินค้าในหมวดนี้</div>' :
     list.map(p=>`
       <div class="prod-card">
         <div class="prod-top">
           <span class="quote-company" style="font-weight:700;">${escapeHtml(p.productName)}</span>
-          <span class="badge badge-cat">${escapeHtml(vCatName(p.categoryId))}</span>
-          ${p.isEdited?'<span class="badge badge-edited">แก้ไขแล้ว</span>':''}
+          <span class="badge badge-cat">🏷️ ${escapeHtml(vCatName(p.categoryId))}</span>
+          ${p.isEdited?'<span class="badge badge-edited">✏️ แก้ไขแล้ว</span>':''}
         </div>
         <div class="quote-note">เสนอโดย ${escapeHtml(p.companyName)}</div>
         ${p.description?`<div class="quote-note">${escapeHtml(p.description)}</div>`:''}
@@ -966,7 +971,7 @@ async function loadMyProducts(){
     <div class="prod-card">
       <div class="prod-top"><span class="quote-company" style="font-weight:700;">${escapeHtml(p.productName)}</span></div>
       <div class="quote-note">${escapeHtml(vCatName(p.categoryId))} · ${escapeHtml(p.companyName)}</div>
-      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="editMyProduct('${p.id}')">แก้ไขรายการนี้</button>
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="editMyProduct('${p.id}')">✏️ แก้ไขรายการนี้</button>
     </div>`).join('');
 }
 function editMyProduct(id){
@@ -980,9 +985,9 @@ function editMyProduct(id){
   document.getElementById('pName').value = p.productName||'';
   document.getElementById('pPrice').value = p.price!=null?p.price:'';
   document.getElementById('pDesc').value = p.description||'';
-  document.getElementById('submitProdBtn').textContent = 'บันทึกการแก้ไข';
+  document.getElementById('submitProdBtn').textContent = '💾 บันทึกการแก้ไข';
   window.scrollTo({top:0, behavior:'smooth'});
-  toast('โหลดข้อมูลมาแก้ไขแล้ว');
+  toast('✏️ โหลดข้อมูลมาแก้ไขแล้ว');
 }
 
 async function submitProduct(){
@@ -1028,10 +1033,10 @@ async function submitProduct(){
       submittedAt: payload.submittedAt || firebase.firestore.FieldValue.serverTimestamp()
     }, {merge:true});
 
-    msg.style.color='var(--ok)'; msg.textContent = isEdit ? '✓ แก้ไขข้อมูลสินค้าเรียบร้อยแล้ว' : '✓ บันทึกข้อมูลสินค้าเรียบร้อยแล้ว ขอบคุณครับ';
-    toast('บันทึกสินค้าแล้ว');
+    msg.style.color='var(--ok)'; msg.textContent = isEdit ? '✅ แก้ไขข้อมูลสินค้าเรียบร้อยแล้ว' : '✅ บันทึกข้อมูลสินค้าเรียบร้อยแล้ว ขอบคุณครับ';
+    toast('✅ บันทึกสินค้าแล้ว');
     VENDOR_STATE.editingProductId = null;
-    btn.textContent = 'บันทึกข้อมูลสินค้า';
+    btn.textContent = '💾 บันทึกข้อมูลสินค้า';
     loadMyProducts();
     loadPublicCatalog();
   }catch(e){
