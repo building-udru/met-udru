@@ -16,10 +16,10 @@
     --ink:#241b45;
     --ink-soft:#6b6486;
     --ink-dim:#9d97b3;
-    --safety:#e0662c;
-    --safety-deep:#a83e15;
+    --safety:#7c5cf5;
+    --safety-deep:#5b3fd9;
     --gold:#d9971c;
-    --flame:#b4362a;
+    --flame:#d1483a;
     --ok:#2f7a4f;
     --ok-bg: #eaf5ee;
     --warn:#a8710a;
@@ -43,7 +43,7 @@
     position:sticky;top:0;padding:22px 16px;display:flex;flex-direction:column;gap:4px;}
   .mark{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;
     font-family:'Anuphan';font-weight:800;font-size:15px;flex:none;letter-spacing:-.02em;margin:0;
-    background:linear-gradient(150deg, var(--safety), var(--safety-deep));box-shadow:0 6px 16px -6px rgba(168,62,21,.5);}
+    background:linear-gradient(150deg, var(--safety), var(--safety-deep));box-shadow:0 6px 16px -6px rgba(92,63,217,.5);}
   .sidebar-brand{display:flex;align-items:center;gap:11px;padding:6px 10px 20px;}
   .sidebar-brand .name{font-size:15.5px;font-weight:800;color:var(--ink);line-height:1.15;}
   .sidebar-brand .org{font-size:10.5px;color:var(--ink-dim);margin-top:1px;}
@@ -51,7 +51,7 @@
     cursor:pointer;transition:background .12s ease,color .12s ease;}
   .navlink .ico{font-size:16px;width:18px;text-align:center;flex:none;}
   .navlink:hover{background:var(--bg-3);color:var(--ink);}
-  .navlink.active{background:linear-gradient(120deg,#fbe6d8,#fff2e9);color:var(--safety-deep);}
+  .navlink.active{background:linear-gradient(120deg,#efe9ff,#f3eeff);color:var(--safety-deep);}
   .navlink .cnt{margin-left:auto;font-family:'JetBrains Mono';font-size:10.5px;color:var(--ink-dim);}
   .navlink.active .cnt{color:var(--safety-deep);}
   .sidebar-foot{margin-top:auto;padding:12px 10px 4px;font-size:11px;color:var(--ink-dim);}
@@ -69,7 +69,7 @@
   .stat-card .stat-ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:12px;}
   .stat-card .stat-num{font-size:26px;font-weight:800;color:var(--ink);letter-spacing:-.02em;line-height:1;}
   .stat-card .stat-label{font-size:12.5px;color:var(--ink-soft);margin-top:6px;font-weight:600;}
-  .stat-ico.p1{background:#fbe6d8;color:#a83e15;}
+  .stat-ico.p1{background:#efe9ff;color:#5b3fd9;}
   .stat-ico.p2{background:#e7f3ff;color:#2568c9;}
   .stat-ico.p3{background:#fdf0e3;color:#b5730f;}
   .stat-ico.p4{background:#e9f7ee;color:#2f7a4f;}
@@ -80,8 +80,8 @@
     padding:10px 18px;border-radius:999px;cursor:pointer;transition:transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease, color .12s ease;}
   .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px -8px rgba(15,35,64,.18);border-color:var(--ink-dim);}
   .btn:active{transform:translateY(0) scale(.98);box-shadow:0 2px 6px -4px rgba(15,35,64,.2);}
-  .btn-primary{background:linear-gradient(120deg, var(--safety), var(--safety-deep));border-color:transparent;color:#fff;font-weight:700;box-shadow:0 6px 16px -8px rgba(168,62,21,.45);}
-  .btn-primary:hover{filter:brightness(1.07);border-color:transparent;box-shadow:0 10px 22px -8px rgba(168,62,21,.55);}
+  .btn-primary{background:linear-gradient(120deg, var(--safety), var(--safety-deep));border-color:transparent;color:#fff;font-weight:700;box-shadow:0 6px 16px -8px rgba(92,63,217,.45);}
+  .btn-primary:hover{filter:brightness(1.07);border-color:transparent;box-shadow:0 10px 22px -8px rgba(92,63,217,.55);}
   .btn-primary:active{filter:brightness(.98);}
   .btn-ghost{background:transparent;border-color:var(--line);color:var(--ink-soft);}
   .btn-ghost:hover{background:var(--bg-3);color:var(--ink);}
@@ -99,7 +99,7 @@
   input,textarea,select{width:100%;font-family:'Anuphan';font-size:15px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--bg-3);color:var(--ink);transition:border-color .12s ease, box-shadow .12s ease, background .12s ease;}
   input::placeholder,textarea::placeholder{color:var(--ink-dim);}
   input:hover,textarea:hover,select:hover{border-color:var(--ink-dim);}
-  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--safety);box-shadow:0 0 0 3px rgba(168,62,21,.12);background:#fff;}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--safety);box-shadow:0 0 0 3px rgba(92,63,217,.12);background:#fff;}
   select{cursor:pointer;}
   textarea{resize:vertical;min-height:70px;}
   .hint{font-size:12px;color:var(--ink-dim);margin-top:5px;}
@@ -113,7 +113,7 @@
   .badge-lowest{background:var(--ok-bg);color:var(--ok);}
   .badge-cat{background:#eef1fb;color:#3a4b8a;}
   .badge-role{background:#eef1fb;color:#3a4b8a;font-size:12px;padding:4px 12px;}
-  .badge-role.admin{background:#fbe6d8;color:#a83e15;}
+  .badge-role.admin{background:#efe9ff;color:#5b3fd9;}
   .badge-role.vendor{background:#fdf0e3;color:#b5730f;}
 
   .cat-chip{display:inline-block;padding:6px 14px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:600;margin:0 6px 6px 0;cursor:pointer;background:var(--bg-3);color:var(--ink-soft);transition:border-color .12s ease, color .12s ease, background .12s ease, transform .12s ease;}
@@ -201,8 +201,8 @@
   .link-box{display:flex;gap:8px;background:var(--bg-3);border:1px dashed var(--line);border-radius:10px;padding:9px 11px;align-items:center;margin-top:9px;}
   .link-box input{border:none;background:transparent;font-family:'JetBrains Mono';font-size:12.5px;padding:2px;color:var(--ink-soft);}
 
-  .tab-intro{display:flex;gap:14px;align-items:flex-start;background:linear-gradient(135deg,#fff6ef,#fffaf6);border:1px solid var(--line);border-left:4px solid var(--safety);border-radius:14px;padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow);}
-  .tab-intro .ti-ico{flex:none;width:38px;height:38px;border-radius:11px;background:#fbe6d8;color:#a83e15;display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .tab-intro{display:flex;gap:14px;align-items:flex-start;background:linear-gradient(135deg,#f6f3ff,#fbfaff);border:1px solid var(--line);border-left:4px solid var(--safety);border-radius:14px;padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow);}
+  .tab-intro .ti-ico{flex:none;width:38px;height:38px;border-radius:11px;background:#efe9ff;color:#5b3fd9;display:flex;align-items:center;justify-content:center;font-size:18px;}
   .tab-intro .ti-title{font-weight:800;font-size:14.5px;color:var(--ink);margin-bottom:4px;}
   .tab-intro .ti-text{font-size:13.5px;color:var(--ink-soft);line-height:1.65;}
   .status-line{font-size:13px;color:var(--ink-soft);margin-top:10px;}
@@ -1084,14 +1084,25 @@ function vendorDataTabHtml(){
     </div>
     <div class="card">
       <span class="eyebrow">📦 คลังสินค้าทั้งหมด (มองเห็นได้ทุกบริษัท ไม่แสดงราคา)</span>
-      <div style="margin-bottom:10px;">
-        <span class="cat-chip ${VENDOR_STATE.dataCat==='all'?'active':''}" onclick="setDataCat('all')">ทั้งหมด</span>
-        ${VENDOR_STATE.categories.map(c=>`<span class="cat-chip ${VENDOR_STATE.dataCat===c.id?'active':''}" onclick="setDataCat('${c.id}')">${escapeHtml(c.name)}</span>`).join('')}
-      </div>
+      <div id="dataCatalogChips" style="margin-bottom:10px;">${dataCatChipsHtml()}</div>
       <div id="catalogList"><div class="hint">กำลังโหลด…</div></div>
     </div>`;
 }
-function setDataCat(id){ VENDOR_STATE.dataCat=id; drawVendorCatalog(); }
+function setDataCat(id){
+  VENDOR_STATE.dataCat=id;
+  drawVendorCatalog();
+  const chipsEl = document.getElementById('dataCatalogChips');
+  if(chipsEl) chipsEl.innerHTML = dataCatChipsHtml();
+}
+function dataCatChipsHtml(){
+  const cat = VENDOR_STATE.dataCat;
+  const counts = {};
+  VENDOR_STATE.catalog.forEach(p=>{ counts[p.categoryId] = (counts[p.categoryId]||0) + 1; });
+  return `
+    <span class="cat-chip ${cat==='all'?'active':''}" onclick="setDataCat('all')">ทั้งหมด (${VENDOR_STATE.catalog.length})</span>
+    ${VENDOR_STATE.categories.map(c=>`<span class="cat-chip ${cat===c.id?'active':''}" onclick="setDataCat('${c.id}')">${escapeHtml(c.name)} (${counts[c.id]||0})</span>`).join('')}
+  `;
+}
 
 async function loadPublicCatalog(){
   const snap = await db.collection('publicProducts').orderBy('submittedAt','desc').get().catch(()=>null);
@@ -1101,6 +1112,8 @@ async function loadPublicCatalog(){
 function drawVendorCatalog(){
   const el = document.getElementById('catalogList');
   if(!el) return;
+  const chipsEl = document.getElementById('dataCatalogChips');
+  if(chipsEl) chipsEl.innerHTML = dataCatChipsHtml();
   const cat = VENDOR_STATE.dataCat;
   const list = VENDOR_STATE.catalog.filter(p=> cat==='all' || p.categoryId===cat);
   el.innerHTML = list.length===0 ? '<div class="hint">📭 ยังไม่มีข้อมูลสินค้าในหมวดนี้</div>' :
