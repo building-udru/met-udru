@@ -668,16 +668,16 @@ function adminDataTabHtml(){
         list.map(p=>`
         <div class="prod-card">
           <div class="prod-top">
-            <span class="quote-company" style="font-weight:700;">${escapeHtml(p.productName)}</span>
+            <span class="quote-company" style="font-weight:700;">📦 ชื่อผลิตภัณฑ์: ${escapeHtml(p.productName)}</span>
             <span class="badge badge-cat">🏷️ ${escapeHtml(catName(p.categoryId))}</span>
             ${p.isEdited?'<span class="badge badge-edited">✏️ แก้ไขแล้ว</span>':''}
             <span class="prod-price">${p.price!=null?fmtBaht(p.price):'-'}</span>
           </div>
           <div class="company-block" style="margin-top:6px;">
-            <span class="cb-name">${escapeHtml(p.companyName)}</span>
-            <span class="cb-phone">☎️ ${escapeHtml(p.companyPhone)} · ส่งล่าสุด ${fmtDate(p.updatedAt||p.submittedAt)}</span>
+            <span class="cb-name">🏢 ชื่อบริษัท: ${escapeHtml(p.companyName)}</span>
+            <span class="cb-phone">☎️ เบอร์ติดต่อ: ${escapeHtml(p.companyPhone)} · ส่งล่าสุด ${fmtDate(p.updatedAt||p.submittedAt)}</span>
           </div>
-          ${p.description?`<div class="quote-note">${escapeHtml(p.description)}</div>`:''}
+          ${p.description?`<div class="quote-note">📝 รายละเอียด: ${escapeHtml(p.description)}</div>`:''}
           ${p.fileURL?`<div class="quote-file">📎 <a href="${p.fileURL}" target="_blank" rel="noopener">${escapeHtml(p.fileName||'เอกสารแนบ/รูปภาพ')}</a></div>`:''}
           <div style="margin-top:8px;"><button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">🗑️ ลบรายการนี้</button></div>
         </div>`).join('')}
@@ -1067,7 +1067,7 @@ function vendorDataTabHtml(){
       <div class="hint" id="submitProdMsg" style="margin-top:10px;"></div>
     </div>
     <div class="card">
-      <span class="eyebrow">🔍 ค้นหาสินค้าที่เคยส่ง (ดูราคาของตัวเองได้)</span>
+      <span class="eyebrow">🔍 ค้นหาสินค้าที่เคยส่ง</span>
       <p class="hint" style="margin-top:0;">ค้นหาจากชื่อบริษัท เบอร์โทร หรือชื่อผลิตภัณฑ์ — กรอกอย่างน้อยหนึ่งช่อง</p>
       <div class="row">
         <div><label style="margin-top:0;">ชื่อบริษัท</label><input id="searchCompany" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName)}"></div>
@@ -1102,12 +1102,12 @@ function drawVendorCatalog(){
     list.map(p=>`
       <div class="prod-card">
         <div class="prod-top">
-          <span class="quote-company" style="font-weight:700;">${escapeHtml(p.productName)}</span>
+          <span class="quote-company" style="font-weight:700;">📦 ชื่อผลิตภัณฑ์: ${escapeHtml(p.productName)}</span>
           <span class="badge badge-cat">🏷️ ${escapeHtml(vCatName(p.categoryId))}</span>
           ${p.isEdited?'<span class="badge badge-edited">✏️ แก้ไขแล้ว</span>':''}
         </div>
-        <div class="quote-note">เสนอโดย ${escapeHtml(p.companyName)}</div>
-        ${p.description?`<div class="quote-note">${escapeHtml(p.description)}</div>`:''}
+        <div class="quote-note">🏢 ชื่อบริษัท: ${escapeHtml(p.companyName)}</div>
+        ${p.description?`<div class="quote-note">📝 รายละเอียด: ${escapeHtml(p.description)}</div>`:''}
       </div>`).join('');
 }
 
