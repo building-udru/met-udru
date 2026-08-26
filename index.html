@@ -357,7 +357,7 @@ function drawAdminShell(){
   `;
   drawAdminTabContent();
 }
-function setAdminTab(t){ ADMIN_STATE.tab = t; drawAdminShell(); }
+function setAdminTab(t){ ADMIN_STATE.tab = t; drawAdminTabContent(); }
 function copyLink(url){ navigator.clipboard.writeText(url).then(()=>toast('📋 คัดลอกลิงก์แล้ว')); }
 
 function drawAdminTabContent(){
@@ -675,7 +675,10 @@ function vendorJobListHtml(){
           <div class="job-title">${escapeHtml(j.title)}</div>
           <div class="job-meta">📄 ${(j.items||[]).length} รายการสเปค${j.deadline?' · ⏰ กำหนดส่งภายใน '+escapeHtml(j.deadline):''}</div>
         </div>
-        <div class="job-actions"><button class="btn btn-primary btn-sm" onclick="openVendorJob('${j.id}')">👀 ดูรายละเอียด / เสนอราคา</button></div>
+        <div class="job-actions">
+          <button class="btn btn-ghost btn-sm" onclick="openAllOffersModal('${j.id}')">🏢 บริษัทที่เสนอทั้งหมด</button>
+          <button class="btn btn-primary btn-sm" onclick="openVendorJob('${j.id}')">👀 ดูรายละเอียด / เสนอราคา</button>
+        </div>
       </div>`).join('')}
   </div>`;
 }
@@ -684,6 +687,51 @@ function openVendorJob(jobId){
   drawVendorContent();
 }
 function backToJobList(){ VENDOR_STATE.activeJobId = null; drawVendorContent(); }
+
+/* ---- ดูรายชื่อบริษัททั้งหมดที่เสนอในโครงการนี้ (เห็นเฉพาะชื่อบริษัท/ผลิตภัณฑ์/รายละเอียด ไม่มีราคา) ---- */
+async function openAllOffersModal(jobId){
+  const job = VENDOR_STATE.jobs.find(j=>j.id===jobId);
+  if(!job) return;
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal"><div class="empty">กำลังโหลดรายชื่อบริษัท…</div></div>`;
+  bg.addEventListener('click', (e)=>{ if(e.target===bg) bg.remove(); });
+  document.body.appendChild(bg);
+
+  const items = job.items || [];
+  const itemName = id => { const it = items.find(i=>i.id===id); return it ? it.name : '-'; };
+  const pubSnap = await db.collection('publicBids').where('jobId','==',jobId).get().catch(()=>null);
+  const bidsDocs = pubSnap ? pubSnap.docs.map(d=>d.data()) : [];
+
+  const modal = bg.querySelector('.modal');
+  if(!modal) return;
+
+  if(bidsDocs.length===0){
+    modal.innerHTML = `
+      <h3 class="disp" style="margin-top:0;">🏢 บริษัทที่เสนอราคาในโครงการนี้</h3>
+      <p class="hint" style="margin-top:0;">${escapeHtml(job.title)}</p>
+      <div class="empty"><div class="disp">📭 ยังไม่มีบริษัทเสนอเข้ามา</div></div>
+      <button class="btn btn-ghost" style="width:100%;margin-top:10px;" onclick="this.closest('.modal-bg').remove()">ปิด</button>`;
+    return;
+  }
+
+  modal.innerHTML = `
+    <h3 class="disp" style="margin-top:0;">🏢 บริษัทที่เสนอราคาในโครงการนี้ (${bidsDocs.length})</h3>
+    <p class="hint" style="margin-top:0;">${escapeHtml(job.title)} — แสดงเฉพาะชื่อบริษัท ผลิตภัณฑ์ และรายละเอียดที่เสนอ ไม่แสดงราคา</p>
+    ${bidsDocs.map(b=>{
+      const entries = Object.entries(b.bids||{});
+      return `<div class="bid-card">
+        <div class="company-block"><span class="cb-name">🏢 ${escapeHtml(b.companyName)}</span>${b.isEdited?' <span class="badge badge-edited">✏️ แก้ไขแล้ว</span>':''}</div>
+        ${entries.length ? entries.map(([itemId, ob])=>`
+          <div class="bid-item-row" style="border-top:1px dashed var(--line-soft);">
+            <span class="lp">${escapeHtml(itemName(itemId))}${ob.product?' · เสนอ: '+escapeHtml(ob.product):''}</span>
+          </div>
+          ${ob.note?`<div class="quote-note" style="margin:2px 0 6px;">รายละเอียด: ${escapeHtml(ob.note)}</div>`:''}
+        `).join('') : '<div class="hint">ไม่มีรายละเอียดเพิ่มเติม</div>'}
+      </div>`;
+    }).join('')}
+    <button class="btn btn-ghost" style="width:100%;margin-top:6px;" onclick="this.closest('.modal-bg').remove()">ปิด</button>`;
+}
 
 async function loadVendorJobDetail(jobId){
   const job = VENDOR_STATE.jobs.find(j=>j.id===jobId);
@@ -745,6 +793,7 @@ function drawVendorJobDetailBody(){
       ${job.description?`<p style="white-space:pre-wrap;color:var(--ink-soft);">${escapeHtml(job.description)}</p>`:''}
       ${job.deadline?`<p class="status-line">⏰ กำหนดส่งราคาภายใน: <strong>${escapeHtml(job.deadline)}</strong></p>`:''}
       <p class="hint" style="color:var(--warn);">🔒 ทุกบริษัทเห็นชื่อบริษัทและผลิตภัณฑ์ที่เสนอของกันและกันได้ แต่จะไม่เห็น “ราคา” ที่บริษัทอื่นเสนอเด็ดขาด — ราคาจะแสดงเฉพาะแอดมินเท่านั้น</p>
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="openAllOffersModal('${job.id}')">🏢 ดูบริษัทที่เสนอทั้งหมด (${pub.length})</button>
     </div>
     <div class="card">
       <span class="eyebrow">เสนอผลิตภัณฑ์และราคาต่อรายการสเปค</span>
