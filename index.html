@@ -228,7 +228,7 @@
       </div>
     </div>
     <div id="sidebarNav"></div>
-    <div class="sidebar-foot">โหมดผู้ดูแลระบบ</div>
+    <div class="sidebar-foot" id="sidebarFoot">โหมดผู้ดูแลระบบ</div>
   </aside>
   <main class="main">
     <div class="mainTop">
@@ -317,15 +317,15 @@ const params = new URLSearchParams(location.search);
 const isVendor = params.has('vendor');
 
 if(isVendor){
-  sidebarEl.style.display = 'none';
-  shellEl.style.maxWidth = '860px';
-  shellEl.style.margin = '0 auto';
-  mainTitle.textContent = 'ระบบเสนอราคางานก่อสร้าง';
+  sidebarEl.style.display = 'flex';
+  document.getElementById('sidebarFoot').textContent = 'พอร์ทัลสำหรับบริษัท';
+  mainTitle.textContent = 'ประมูลราคาโครงการ';
   topbarSub.textContent = 'พอร์ทัลสำหรับบริษัท · กองอาคารและสถานที่ UDRU';
   topbarActions.innerHTML = '';
   renderVendorPortal();
 } else {
   sidebarEl.style.display = 'flex';
+  document.getElementById('sidebarFoot').textContent = 'โหมดผู้ดูแลระบบ';
   mainTitle.textContent = 'ภาพรวม';
   topbarSub.textContent = 'หลังบ้านผู้ดูแล' + (TEST_MODE_NO_LOGIN ? ' (โหมดทดสอบ ไม่ได้ล็อกอิน)' : '');
   if(TEST_MODE_NO_LOGIN){
@@ -699,12 +699,30 @@ async function renderVendorPortal(){
 }
 function vCatName(id){ const c = VENDOR_STATE.categories.find(c=>c.id===id); return c ? c.name : 'ไม่ระบุหมวดงาน'; }
 
+function drawVendorSidebarNav(){
+  const nav = document.getElementById('sidebarNav');
+  if(!nav) return;
+  nav.innerHTML = `
+    <div class="navlink ${VENDOR_STATE.tab==='bid'?'active':''}" onclick="setVendorTab('bid')"><span class="ico">📋</span>ประมูลราคาโครงการ<span class="cnt">${VENDOR_STATE.jobs.length}</span></div>
+    <div class="navlink ${VENDOR_STATE.tab==='data'?'active':''}" onclick="setVendorTab('data')"><span class="ico">🏷️</span>เสนอสินค้าทั่วไป<span class="cnt">${VENDOR_STATE.categories.length}</span></div>
+  `;
+}
+function vendorStatCardsHtml(){
+  const openJobs = VENDOR_STATE.jobs.length;
+  const specCount = VENDOR_STATE.jobs.reduce((sum,j)=>sum+((j.items||[]).length),0);
+  return `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-ico p1">📋</div><div class="stat-num">${openJobs}</div><div class="stat-label">โครงการที่เปิดรับราคา</div></div>
+      <div class="stat-card"><div class="stat-ico p2">📄</div><div class="stat-num">${specCount}</div><div class="stat-label">รายการสเปคทั้งหมด</div></div>
+      <div class="stat-card"><div class="stat-ico p3">🏷️</div><div class="stat-num">${VENDOR_STATE.categories.length}</div><div class="stat-label">หมวดงานทั้งหมด</div></div>
+      <div class="stat-card"><div class="stat-ico p4">🏢</div><div class="stat-num">${VENDOR_STATE.companyName ? '1' : '0'}</div><div class="stat-label">บริษัทของท่าน${VENDOR_STATE.companyName ? ' · '+escapeHtml(VENDOR_STATE.companyName) : ''}</div></div>
+    </div>`;
+}
 function drawVendorShell(){
+  drawVendorSidebarNav();
+  mainTitle.textContent = VENDOR_STATE.tab==='bid' ? 'ประมูลราคาโครงการ' : 'เสนอสินค้าทั่วไป';
   app.innerHTML = `
-    <div class="tabbar">
-      <div class="tabbtn ${VENDOR_STATE.tab==='bid'?'active':''}" onclick="setVendorTab('bid')"><span class="ico">📋</span>ประมูลราคาโครงการ</div>
-      <div class="tabbtn ${VENDOR_STATE.tab==='data'?'active':''}" onclick="setVendorTab('data')"><span class="ico">🏷️</span>เสนอสินค้าทั่วไป</div>
-    </div>
+    ${vendorStatCardsHtml()}
     <div id="vendorContent"></div>
   `;
   drawVendorContent();
