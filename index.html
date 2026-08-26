@@ -59,7 +59,7 @@
   .main{flex:1;min-width:0;}
   .mainTop{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;position:sticky;top:0;z-index:30;
     background:rgba(245,244,251,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);flex-wrap:wrap;gap:10px;}
-  .mainTop h1{font-size:20px;margin:0;font-weight:800;letter-spacing:-.01em;color:var(--ink);}
+  .mainTop h1{font-size:20px;margin:0;font-weight:800;letter-spacing:-.01em;color:var(--ink);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
   .mainTop .sub{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
   .wrap{max-width:1080px;margin:0 auto;padding:28px 32px;}
 
@@ -112,6 +112,9 @@
   .badge-edited{background:var(--warn-bg);color:var(--warn);}
   .badge-lowest{background:var(--ok-bg);color:var(--ok);}
   .badge-cat{background:#eef1fb;color:#3a4b8a;}
+  .badge-role{background:#eef1fb;color:#3a4b8a;font-size:12px;padding:4px 12px;}
+  .badge-role.admin{background:#efe9ff;color:#5b3fd9;}
+  .badge-role.vendor{background:#fdf0e3;color:#b5730f;}
 
   .cat-chip{display:inline-block;padding:6px 14px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:600;margin:0 6px 6px 0;cursor:pointer;background:var(--bg-3);color:var(--ink-soft);transition:border-color .12s ease, color .12s ease, background .12s ease, transform .12s ease;}
   .cat-chip:hover{border-color:var(--safety);color:var(--safety-deep);transform:translateY(-1px);}
@@ -233,7 +236,7 @@
   <main class="main">
     <div class="mainTop">
       <div>
-        <h1 id="mainTitle">ระบบเสนอราคางานก่อสร้าง</h1>
+        <h1 id="mainTitle">ระบบเสนอราคางานก่อสร้าง <span class="badge badge-role" id="roleBadge"></span></h1>
         <div class="sub" id="topbarSub">กองอาคารและสถานที่</div>
       </div>
       <div id="topbarActions"></div>
@@ -296,6 +299,7 @@ const topbarSub = document.getElementById('topbarSub');
 const mainTitle = document.getElementById('mainTitle');
 const sidebarEl = document.getElementById('sidebar');
 const shellEl = document.getElementById('shell');
+const roleBadgeEl = document.getElementById('roleBadge');
 
 function toast(msg){
   const t = document.getElementById('toast');
@@ -310,7 +314,7 @@ function normPhone(p){ return (p||'').replace(/[^0-9]/g,''); }
 
 /* =========================================================
    ROUTER
-   - ?vendor=1  -> ลิงก์เดียวสำหรับทุกบริษัท (ประมูลราคา + ข้อมูลสินค้า)
+   - ?vendor=1  -> ลิงก์เดียวสำหรับทุกบริษัท/ผู้เสนอราคา (ประมูลราคา + ข้อมูลสินค้า)
    - ไม่มีพารามิเตอร์ -> หลังบ้านแอดมิน (ต้องล็อกอิน)
 ========================================================= */
 const params = new URLSearchParams(location.search);
@@ -318,16 +322,20 @@ const isVendor = params.has('vendor');
 
 if(isVendor){
   sidebarEl.style.display = 'flex';
-  document.getElementById('sidebarFoot').textContent = 'พอร์ทัลสำหรับบริษัท';
+  document.getElementById('sidebarFoot').textContent = 'พอร์ทัลผู้เสนอราคา (บริษัท)';
   mainTitle.textContent = 'ประมูลราคาโครงการ';
-  topbarSub.textContent = 'พอร์ทัลสำหรับบริษัท · กองอาคารและสถานที่ UDRU';
+  topbarSub.textContent = 'พอร์ทัลผู้เสนอราคา · กองอาคารและสถานที่ UDRU';
   topbarActions.innerHTML = '';
+  roleBadgeEl.textContent = '🧾 ผู้เสนอราคา';
+  roleBadgeEl.classList.add('vendor');
   renderVendorPortal();
 } else {
   sidebarEl.style.display = 'flex';
   document.getElementById('sidebarFoot').textContent = 'โหมดผู้ดูแลระบบ';
   mainTitle.textContent = 'ภาพรวม';
   topbarSub.textContent = 'หลังบ้านผู้ดูแล' + (TEST_MODE_NO_LOGIN ? ' (โหมดทดสอบ ไม่ได้ล็อกอิน)' : '');
+  roleBadgeEl.textContent = '🛡️ แอดมิน';
+  roleBadgeEl.classList.add('admin');
   if(TEST_MODE_NO_LOGIN){
     renderAdmin({email:'โหมดทดสอบ — ยังไม่ได้ล็อกอิน'});
   } else {
@@ -418,21 +426,21 @@ function statCardsHtml(){
 function drawAdminShell(){
   const vendorLink = location.origin + location.pathname + '?vendor=1';
   drawSidebarNav();
-  mainTitle.textContent = ADMIN_STATE.tab==='bid' ? 'ประมูลราคาโครงการ' : 'คลังข้อมูลสินค้า';
+  mainTitle.innerHTML = (ADMIN_STATE.tab==='bid' ? 'ประมูลราคาโครงการ' : 'คลังข้อมูลสินค้า') + ' <span class="badge badge-role admin" id="roleBadge">🛡️ แอดมิน</span>';
   app.innerHTML = `
     ${statCardsHtml()}
     <div class="card">
-      <span class="eyebrow">🔗 ลิงก์เดียวสำหรับทุกบริษัท</span>
-      <p class="hint" style="margin-top:0;">ส่งลิงก์นี้ให้บริษัททุกแห่ง ใช้ลิงก์เดียวกันทั้งหมด ฝั่งบริษัทจะแก้ไขหน้าเว็บเองไม่ได้ ทำได้แค่กรอกและส่งข้อมูลของตนเอง</p>
+      <span class="eyebrow">🔗 ลิงก์สำหรับผู้เสนอราคา (บริษัท) ทุกแห่ง</span>
+      <p class="hint" style="margin-top:0;">ส่งลิงก์นี้ให้ผู้เสนอราคา/บริษัททุกแห่ง ใช้ลิงก์เดียวกันทั้งหมด ฝั่งผู้เสนอราคาจะแก้ไขหน้าเว็บเองไม่ได้ ทำได้แค่กรอกและส่งข้อมูลของตนเอง</p>
       <div class="link-box"><input readonly value="${vendorLink}" onclick="this.select()">
-        <button class="btn btn-ghost btn-sm" onclick="copyLink('${vendorLink}')">📋 คัดลอกลิงก์</button></div>
+        <button class="btn btn-ghost btn-sm" onclick="copyLink('${vendorLink}')">📋 คัดลอกลิงก์ผู้เสนอราคา</button></div>
     </div>
     <div id="adminTabContent"></div>
   `;
   drawAdminTabContent();
 }
-function setAdminTab(t){ ADMIN_STATE.tab = t; drawSidebarNav(); mainTitle.textContent = t==='bid' ? 'ประมูลราคาโครงการ' : 'คลังข้อมูลสินค้า'; drawAdminTabContent(); }
-function copyLink(url){ navigator.clipboard.writeText(url).then(()=>toast('📋 คัดลอกลิงก์แล้ว')); }
+function setAdminTab(t){ ADMIN_STATE.tab = t; drawSidebarNav(); mainTitle.innerHTML = (t==='bid' ? 'ประมูลราคาโครงการ' : 'คลังข้อมูลสินค้า') + ' <span class="badge badge-role admin" id="roleBadge">🛡️ แอดมิน</span>'; drawAdminTabContent(); }
+function copyLink(url){ navigator.clipboard.writeText(url).then(()=>toast('📋 คัดลอกลิงก์ผู้เสนอราคาแล้ว')); }
 
 function drawAdminTabContent(){
   const el = document.getElementById('adminTabContent');
@@ -520,12 +528,12 @@ async function toggleQuotes(jobId){
   const snap = await db.collection('quotes').where('jobId','==',jobId).get();
   const bidsDocs = snap.docs.map(d=>({id:d.id, ...d.data()}));
   if(bidsDocs.length===0){
-    el.innerHTML = `<div class="empty" style="padding:16px;">ยังไม่มีบริษัทเสนอราคาเข้ามา</div>`;
+    el.innerHTML = `<div class="empty" style="padding:16px;">ยังไม่มีผู้เสนอราคาเข้ามา</div>`;
     return;
   }
   const catIds = [...new Set(items.map(i=>i.categoryId))];
   el.innerHTML = `<div class="card" style="margin-top:8px;">
-    <span class="eyebrow">ใบเสนอราคาทั้งหมด (${bidsDocs.length} บริษัท) — จัดกลุ่มตามรายการสเปค เพื่อเทียบราคาสินค้าชนิดเดียวกัน · เห็นราคาได้เฉพาะแอดมิน · ไฮไลต์เขียว = ราคาต่ำสุดของรายการนั้น</span>
+    <span class="eyebrow">ใบเสนอราคาทั้งหมด (${bidsDocs.length} ผู้เสนอราคา) — จัดกลุ่มตามรายการสเปค เพื่อเทียบราคาสินค้าชนิดเดียวกัน · เห็นราคาได้เฉพาะแอดมิน · ไฮไลต์เขียว = ราคาต่ำสุดของรายการนั้น</span>
     ${catIds.map(cid=>`
       <div class="spec-group-title">${escapeHtml(catName(cid))}</div>
       ${items.filter(it=>it.categoryId===cid).map(it=>{
@@ -552,7 +560,7 @@ async function toggleQuotes(jobId){
             <div class="hint" style="margin:0 0 10px;">โทร ${escapeHtml(b.companyPhone)} · ส่งล่าสุด ${fmtDate(b.updatedAt||b.submittedAt)}</div>`;
           }).join('')}
         </div>`;
-      }).join('') || '<div class="hint">ยังไม่มีบริษัทเสนอในหมวดนี้</div>'}
+      }).join('') || '<div class="hint">ยังไม่มีผู้เสนอราคาในหมวดนี้</div>'}
     `).join('')}
   </div>`;
 }
@@ -579,7 +587,7 @@ function openJobModal(jobId){
       <label>รายละเอียด (ไม่บังคับ)</label><textarea id="newJobDesc" placeholder="ขอบเขตงาน เงื่อนไข ฯลฯ">${editing?escapeHtml(job.description||''):''}</textarea>
       <label>กำหนดส่งราคาภายใน (ไม่บังคับ)</label><input id="newJobDeadline" placeholder="เช่น 30 ก.ย. 2569" value="${editing?escapeHtml(job.deadline||''):''}">
       <label style="margin-bottom:2px;">รายการสเปคของโครงการ</label>
-      <div class="hint" style="margin-top:0;margin-bottom:8px;">แต่ละรายการเลือก “หมวดงาน” เช่น พื้น แล้วตั้งชื่อรายการ เช่น “กระเบื้อง 60×60” — บริษัทจะเสนอผลิตภัณฑ์และราคาตามสเปคที่ตั้งไว้นี้</div>
+      <div class="hint" style="margin-top:0;margin-bottom:8px;">แต่ละรายการเลือก “หมวดงาน” เช่น พื้น แล้วตั้งชื่อรายการ เช่น “กระเบื้อง 60×60” — ผู้เสนอราคาจะเสนอผลิตภัณฑ์และราคาตามสเปคที่ตั้งไว้นี้</div>
       <div id="specRows"></div>
       <button class="btn btn-ghost btn-sm" type="button" onclick="addSpecRow()">➕ เพิ่มรายการสเปค</button>
       <div style="display:flex;gap:10px;margin-top:20px;">
@@ -647,12 +655,12 @@ function adminDataTabHtml(){
           return `<span class="cat-chip ${cat===c.id?'active':''}" onclick="setProductCat('${c.id}')">${escapeHtml(c.name)} (${count})</span>`;
         }).join('')}
       </div>
-      <label>ค้นหาชื่อสินค้า / บริษัท</label>
+      <label>ค้นหาชื่อสินค้า / ผู้เสนอราคา</label>
       <input placeholder="พิมพ์เพื่อค้นหา" value="${escapeHtml(ADMIN_STATE.productFilter||'')}" oninput="ADMIN_STATE.productFilter=this.value; drawAdminTabContent();">
     </div>
     <div class="card">
-      <span class="eyebrow">สินค้าที่บริษัทเสนอเข้ามาอิสระ (${list.length}) — เห็นราคาได้เฉพาะแอดมิน</span>
-      ${list.length===0 ? `<div class="empty"><div class="disp">📭 ยังไม่มีข้อมูลสินค้า</div>ให้บริษัทเข้าลิงก์เดียวกันแล้วเลือกแท็บ “เสนอสินค้าทั่วไป”</div>` :
+      <span class="eyebrow">สินค้าที่ผู้เสนอราคาเสนอเข้ามาอิสระ (${list.length}) — เห็นราคาได้เฉพาะแอดมิน</span>
+      ${list.length===0 ? `<div class="empty"><div class="disp">📭 ยังไม่มีข้อมูลสินค้า</div>ให้ผู้เสนอราคาเข้าลิงก์เดียวกันแล้วเลือกแท็บ “เสนอสินค้าทั่วไป”</div>` :
         list.map(p=>`
         <div class="prod-card">
           <div class="prod-top">
@@ -682,8 +690,8 @@ async function deleteProduct(id){
 }
 
 /* =========================================================
-   VENDOR PORTAL (ลิงก์เดียว ?vendor=1) — บริษัทดูได้/กรอกได้อย่างเดียว
-   บริษัทอื่นเห็นได้เฉพาะชื่อบริษัทและผลิตภัณฑ์ ส่วน "ราคา" และเบอร์โทร
+   VENDOR PORTAL (ลิงก์เดียว ?vendor=1) — ผู้เสนอราคาดูได้/กรอกได้อย่างเดียว
+   ผู้เสนอราคาอื่นเห็นได้เฉพาะชื่อบริษัทและผลิตภัณฑ์ ส่วน "ราคา" และเบอร์โทร
    เห็นเฉพาะแอดมินเท่านั้น
 ========================================================= */
 let VENDOR_STATE = { tab:'bid', companyName:'', companyPhone:'', categories:[], jobs:[], activeJobId:null, activeJob:null,
@@ -715,12 +723,12 @@ function vendorStatCardsHtml(){
       <div class="stat-card"><div class="stat-ico p1">📋</div><div class="stat-num">${openJobs}</div><div class="stat-label">โครงการที่เปิดรับราคา</div></div>
       <div class="stat-card"><div class="stat-ico p2">📄</div><div class="stat-num">${specCount}</div><div class="stat-label">รายการสเปคทั้งหมด</div></div>
       <div class="stat-card"><div class="stat-ico p3">🏷️</div><div class="stat-num">${VENDOR_STATE.categories.length}</div><div class="stat-label">หมวดงานทั้งหมด</div></div>
-      <div class="stat-card"><div class="stat-ico p4">🏢</div><div class="stat-num">${VENDOR_STATE.companyName ? '1' : '0'}</div><div class="stat-label">บริษัทของท่าน${VENDOR_STATE.companyName ? ' · '+escapeHtml(VENDOR_STATE.companyName) : ''}</div></div>
+      <div class="stat-card"><div class="stat-ico p4">🏢</div><div class="stat-num">${VENDOR_STATE.companyName ? '1' : '0'}</div><div class="stat-label">บริษัทของผู้เสนอราคา${VENDOR_STATE.companyName ? ' · '+escapeHtml(VENDOR_STATE.companyName) : ''}</div></div>
     </div>`;
 }
 function drawVendorShell(){
   drawVendorSidebarNav();
-  mainTitle.textContent = VENDOR_STATE.tab==='bid' ? 'ประมูลราคาโครงการ' : 'เสนอสินค้าทั่วไป';
+  mainTitle.innerHTML = (VENDOR_STATE.tab==='bid' ? 'ประมูลราคาโครงการ' : 'เสนอสินค้าทั่วไป') + ' <span class="badge badge-role vendor" id="roleBadge">🧾 ผู้เสนอราคา</span>';
   app.innerHTML = `
     ${vendorStatCardsHtml()}
     <div id="vendorContent"></div>
@@ -768,7 +776,7 @@ function vendorJobListHtml(){
           <div class="job-meta">📄 ${(j.items||[]).length} รายการสเปค${j.deadline?' · ⏰ กำหนดส่งภายใน '+escapeHtml(j.deadline):''}</div>
         </div>
         <div class="job-actions">
-          <button class="btn btn-ghost btn-sm" onclick="openAllOffersModal('${j.id}')">🏢 บริษัทที่เสนอทั้งหมด</button>
+          <button class="btn btn-ghost btn-sm" onclick="openAllOffersModal('${j.id}')">🏢 ผู้เสนอราคาทั้งหมด</button>
           <button class="btn btn-primary btn-sm" onclick="openVendorJob('${j.id}')">👀 ดูรายละเอียด / เสนอราคา</button>
         </div>
       </div>`).join('')}
@@ -780,13 +788,13 @@ function openVendorJob(jobId){
 }
 function backToJobList(){ VENDOR_STATE.activeJobId = null; drawVendorContent(); }
 
-/* ---- ดูรายชื่อบริษัททั้งหมดที่เสนอในโครงการนี้ (เห็นเฉพาะชื่อบริษัท/ผลิตภัณฑ์/รายละเอียด ไม่มีราคา) ---- */
+/* ---- ดูรายชื่อผู้เสนอราคาทั้งหมดที่เสนอในโครงการนี้ (เห็นเฉพาะชื่อบริษัท/ผลิตภัณฑ์/รายละเอียด ไม่มีราคา) ---- */
 async function openAllOffersModal(jobId){
   const job = VENDOR_STATE.jobs.find(j=>j.id===jobId);
   if(!job) return;
   const bg = document.createElement('div');
   bg.className = 'modal-bg';
-  bg.innerHTML = `<div class="modal"><div class="empty">กำลังโหลดรายชื่อบริษัท…</div></div>`;
+  bg.innerHTML = `<div class="modal"><div class="empty">กำลังโหลดรายชื่อผู้เสนอราคา…</div></div>`;
   bg.addEventListener('click', (e)=>{ if(e.target===bg) bg.remove(); });
   document.body.appendChild(bg);
 
@@ -800,28 +808,36 @@ async function openAllOffersModal(jobId){
 
   if(bidsDocs.length===0){
     modal.innerHTML = `
-      <h3 class="disp" style="margin-top:0;">🏢 บริษัทที่เสนอราคาในโครงการนี้</h3>
+      <h3 class="disp" style="margin-top:0;">🏢 ผู้เสนอราคาในโครงการนี้</h3>
       <p class="hint" style="margin-top:0;">${escapeHtml(job.title)}</p>
-      <div class="empty"><div class="disp">📭 ยังไม่มีบริษัทเสนอเข้ามา</div></div>
+      <div class="empty"><div class="disp">📭 ยังไม่มีผู้เสนอราคาเข้ามา</div></div>
       <button class="btn btn-ghost" style="width:100%;margin-top:10px;" onclick="this.closest('.modal-bg').remove()">ปิด</button>`;
     return;
   }
 
+  /* จัดกลุ่มตามหมวดงาน -> รายการสเปค -> รายชื่อผู้เสนอราคาที่เสนอรายการนั้น (ไม่แสดงราคา) */
+  const catIds = [...new Set(items.map(i=>i.categoryId))];
   modal.innerHTML = `
-    <h3 class="disp" style="margin-top:0;">🏢 บริษัทที่เสนอราคาในโครงการนี้ (${bidsDocs.length})</h3>
-    <p class="hint" style="margin-top:0;">${escapeHtml(job.title)} — แสดงเฉพาะชื่อบริษัท ผลิตภัณฑ์ และรายละเอียดที่เสนอ ไม่แสดงราคา</p>
-    ${bidsDocs.map(b=>{
-      const entries = Object.entries(b.bids||{});
-      return `<div class="bid-card">
-        <div class="company-block"><span class="cb-name">🏢 ${escapeHtml(b.companyName)}</span>${b.isEdited?' <span class="badge badge-edited">✏️ แก้ไขแล้ว</span>':''}</div>
-        ${entries.length ? entries.map(([itemId, ob])=>`
-          <div class="bid-item-row" style="border-top:1px dashed var(--line-soft);">
-            <span class="lp">${escapeHtml(itemName(itemId))}${ob.product?' · เสนอ: '+escapeHtml(ob.product):''}</span>
-          </div>
-          ${ob.note?`<div class="quote-note" style="margin:2px 0 6px;">รายละเอียด: ${escapeHtml(ob.note)}</div>`:''}
-        `).join('') : '<div class="hint">ไม่มีรายละเอียดเพิ่มเติม</div>'}
-      </div>`;
-    }).join('')}
+    <h3 class="disp" style="margin-top:0;">🏢 ผู้เสนอราคาในโครงการนี้ (${bidsDocs.length})</h3>
+    <p class="hint" style="margin-top:0;">${escapeHtml(job.title)} — จัดกลุ่มตามหมวดงาน แสดงเฉพาะชื่อบริษัทผู้เสนอราคา ผลิตภัณฑ์ และรายละเอียดที่เสนอ ไม่แสดงราคา</p>
+    ${catIds.map(cid=>{
+      const catItems = items.filter(it=>it.categoryId===cid);
+      const groupsHtml = catItems.map(it=>{
+        const offers = bidsDocs.filter(b=>(b.bids||{})[it.id]).map(b=>({b, ob:b.bids[it.id]}));
+        if(offers.length===0) return '';
+        return `<div class="bid-card">
+          <div class="item-title" style="font-size:16px;margin-bottom:8px;">${escapeHtml(it.name)}</div>
+          ${offers.map(({b,ob})=>`
+            <div class="bid-item-row">
+              <span class="lp"><b>🏢 ${escapeHtml(b.companyName)}</b>${b.isEdited?' <span class="badge badge-edited">✏️ แก้ไขแล้ว</span>':''}${ob.product?' · เสนอ: '+escapeHtml(ob.product):''}</span>
+            </div>
+            ${ob.note?`<div class="quote-note" style="margin:2px 0 8px;">รายละเอียด: ${escapeHtml(ob.note)}</div>`:''}
+          `).join('')}
+        </div>`;
+      }).join('');
+      if(!groupsHtml) return '';
+      return `<div class="spec-group-title">${escapeHtml(vCatName(cid))}</div>${groupsHtml}`;
+    }).join('') || '<div class="hint">ไม่มีรายละเอียดเพิ่มเติม</div>'}
     <button class="btn btn-ghost" style="width:100%;margin-top:6px;" onclick="this.closest('.modal-bg').remove()">ปิด</button>`;
 }
 
@@ -856,7 +872,7 @@ async function lookupExistingBidFromPhone(jobId, phoneVal){
   }
 }
 
-/* เปิด/ปิดแผงรายละเอียดที่บริษัทอื่นเสนอในรายการนี้ */
+/* เปิด/ปิดแผงรายละเอียดที่ผู้เสนอราคาอื่นเสนอในรายการนี้ */
 function toggleOffers(itemId){
   const el = document.getElementById('offerspanel_'+itemId);
   const btn = document.getElementById('offersbtn_'+itemId);
@@ -884,8 +900,8 @@ function drawVendorJobDetailBody(){
       <h2 class="disp" style="margin:12px 0 6px;">${escapeHtml(job.title)}</h2>
       ${job.description?`<p style="white-space:pre-wrap;color:var(--ink-soft);">${escapeHtml(job.description)}</p>`:''}
       ${job.deadline?`<p class="status-line">⏰ กำหนดส่งราคาภายใน: <strong>${escapeHtml(job.deadline)}</strong></p>`:''}
-      <p class="hint" style="color:var(--warn);">🔒 ทุกบริษัทเห็นชื่อบริษัทและผลิตภัณฑ์ที่เสนอของกันและกันได้ แต่จะไม่เห็น “ราคา” ที่บริษัทอื่นเสนอเด็ดขาด — ราคาจะแสดงเฉพาะแอดมินเท่านั้น</p>
-      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="openAllOffersModal('${job.id}')">🏢 ดูบริษัทที่เสนอทั้งหมด (${pub.length})</button>
+      <p class="hint" style="color:var(--warn);">🔒 ผู้เสนอราคาทุกรายเห็นชื่อบริษัทและผลิตภัณฑ์ที่เสนอของกันและกันได้ แต่จะไม่เห็น “ราคา” ที่ผู้เสนอราคารายอื่นเสนอเด็ดขาด — ราคาจะแสดงเฉพาะแอดมินเท่านั้น</p>
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="openAllOffersModal('${job.id}')">🏢 ดูผู้เสนอราคาทั้งหมด (${pub.length})</button>
     </div>
     <div class="card">
       <span class="eyebrow">เสนอผลิตภัณฑ์และราคาต่อรายการสเปค</span>
@@ -907,10 +923,10 @@ function drawVendorJobDetailBody(){
           <div class="item-bid-input-group ${prev?'is-filled':''}" id="itemcard_${it.id}">
             <div class="item-title">${escapeHtml(it.name)}</div>
             <div class="item-detail">${[it.spec, it.unit?('หน่วย: '+it.unit):'', it.qty?('จำนวน: '+it.qty):''].filter(Boolean).join(' · ')||'-'}</div>
-            ${offerRows.length ? `<button class="btn btn-ghost btn-sm" type="button" style="margin-bottom:14px;" onclick="toggleOffers('${it.id}')" id="offersbtn_${it.id}">👀 ดูข้อมูลที่บริษัทอื่นเสนอ (${offerRows.length})</button>` : '<div class="hint" style="margin-bottom:14px;">ยังไม่มีบริษัทเสนอรายการนี้</div>'}
+            ${offerRows.length ? `<button class="btn btn-ghost btn-sm" type="button" style="margin-bottom:14px;" onclick="toggleOffers('${it.id}')" id="offersbtn_${it.id}">👀 ดูข้อมูลที่ผู้เสนอราคาอื่นเสนอ (${offerRows.length})</button>` : '<div class="hint" style="margin-bottom:14px;">ยังไม่มีผู้เสนอราคาเสนอรายการนี้</div>'}
             <div class="item-offers" id="offerspanel_${it.id}" style="display:none;">${offerRows.join('')}</div>
             <div class="row">
-              <div><label style="margin-top:0;">ชื่อบริษัทของท่าน</label><input id="bidcompany_${it.id}" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName||'')}" oninput="syncCompanyField(this.value,'name')"></div>
+              <div><label style="margin-top:0;">ชื่อบริษัทของผู้เสนอราคา</label><input id="bidcompany_${it.id}" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName||'')}" oninput="syncCompanyField(this.value,'name')"></div>
               <div><label style="margin-top:0;">เบอร์ติดต่อ</label><input id="bidphone_${it.id}" placeholder="08x-xxx-xxxx" value="${escapeHtml(VENDOR_STATE.companyPhone||'')}" oninput="syncCompanyField(this.value,'phone')" onblur="lookupExistingBidFromPhone('${VENDOR_STATE.activeJobId}', this.value)"></div>
             </div>
             <div class="row">
@@ -1018,9 +1034,9 @@ function vendorDataTabHtml(){
   return `
     <div class="card">
       <span class="eyebrow">🏷️ เสนอข้อมูลสินค้า/ผลิตภัณฑ์ (ไม่ผูกกับโครงการใด)</span>
-      <p class="hint" style="margin-top:0;">ใช้สำหรับนำเสนอสินค้าทั่วไปของบริษัทท่านตามหมวดงาน ไม่จำเป็นต้องเกี่ยวข้องกับโครงการที่เปิดประมูลอยู่ · บริษัทอื่นเห็นได้เฉพาะชื่อบริษัทและชื่อผลิตภัณฑ์ ส่วน “ราคา” และเบอร์โทรเห็นเฉพาะแอดมินเท่านั้น</p>
+      <p class="hint" style="margin-top:0;">ใช้สำหรับผู้เสนอราคานำเสนอสินค้าทั่วไปของบริษัทตามหมวดงาน ไม่จำเป็นต้องเกี่ยวข้องกับโครงการที่เปิดประมูลอยู่ · ผู้เสนอราคารายอื่นเห็นได้เฉพาะชื่อบริษัทและชื่อผลิตภัณฑ์ ส่วน “ราคา” และเบอร์โทรเห็นเฉพาะแอดมินเท่านั้น</p>
       <div class="row">
-        <div><label style="margin-top:0;">ชื่อบริษัทของท่าน</label><input id="pCompany" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName||'')}" oninput="syncCompanyField(this.value,'name')"></div>
+        <div><label style="margin-top:0;">ชื่อบริษัทของผู้เสนอราคา</label><input id="pCompany" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName||'')}" oninput="syncCompanyField(this.value,'name')"></div>
         <div><label style="margin-top:0;">เบอร์ติดต่อ</label><input id="pPhone" placeholder="08x-xxx-xxxx" value="${escapeHtml(VENDOR_STATE.companyPhone||'')}" oninput="syncCompanyField(this.value,'phone')"></div>
       </div>
       <label>หมวดงาน</label><select id="pCategory">${catOpts}</select>
@@ -1190,7 +1206,7 @@ async function submitProduct(){
 /* ===================================================================
    หมายเหตุความปลอดภัยของราคา (สำคัญ)
    แอปนี้เป็นหน้าเว็บฝั่ง client ล้วน ไม่มีเซิร์ฟเวอร์ตรงกลาง การซ่อนราคา
-   จากบริษัทอื่นในหน้าจอทำได้แล้ว (หน้า Bidding/Data ฝั่งบริษัทดึงข้อมูลจาก
+   จากผู้เสนอราคาอื่นในหน้าจอทำได้แล้ว (หน้า Bidding/Data ฝั่งผู้เสนอราคาดึงข้อมูลจาก
    collection "publicBids" / "publicProducts" ซึ่งไม่มีฟิลด์ราคาอยู่จริง)
    แต่ collection "quotes" และ "products" (ที่มีราคา) ยังอ่านได้จากฝั่ง client
    หากไม่ได้ตั้ง Firestore Security Rules จำกัดสิทธิ์ไว้ แนะนำให้ตั้งกฎ
