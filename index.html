@@ -200,6 +200,10 @@
   .link-box{display:flex;gap:8px;background:var(--bg-3);border:1px dashed var(--line);border-radius:10px;padding:9px 11px;align-items:center;margin-top:9px;}
   .link-box input{border:none;background:transparent;font-family:'JetBrains Mono';font-size:12.5px;padding:2px;color:var(--ink-soft);}
 
+  .tab-intro{display:flex;gap:14px;align-items:flex-start;background:linear-gradient(135deg,#f6f3ff,#fbfaff);border:1px solid var(--line);border-left:4px solid var(--safety);border-radius:14px;padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow);}
+  .tab-intro .ti-ico{flex:none;width:38px;height:38px;border-radius:11px;background:#efe9ff;color:#5b3fd9;display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .tab-intro .ti-title{font-weight:800;font-size:14.5px;color:var(--ink);margin-bottom:4px;}
+  .tab-intro .ti-text{font-size:13.5px;color:var(--ink-soft);line-height:1.65;}
   .status-line{font-size:13px;color:var(--ink-soft);margin-top:10px;}
   footer{text-align:center;font-size:12px;color:var(--ink-dim);padding:30px 0 40px;}
   @media(max-width:640px){
@@ -766,7 +770,15 @@ function drawVendorContent(){
 /* ---- Bidding: project list ---- */
 function vendorJobListHtml(){
   const jobs = VENDOR_STATE.jobs;
-  return `<div class="card">
+  return `
+    <div class="tab-intro">
+      <div class="ti-ico">📋</div>
+      <div>
+        <div class="ti-title">ประมูลราคาโครงการ คืออะไร?</div>
+        <div class="ti-text">แท็บนี้ใช้สำหรับเสนอราคาตามความต้องการที่ทางมหาวิทยาลัยกำหนดไว้อย่างชัดเจน โดยแอดมินจะระบุชนิดและประเภทของสินค้าที่ต้องการไว้ในแต่ละโครงการล่วงหน้า ผู้เสนอราคาเพียงเลือกโครงการและรายการสเปคที่ตรงกับสินค้าของท่าน แล้วนำเสนอผลิตภัณฑ์พร้อมราคาให้ตรงตามที่ระบุไว้เท่านั้น</div>
+      </div>
+    </div>
+    <div class="card">
     <span class="eyebrow">โครงการที่เปิดรับราคา (${jobs.length})</span>
     ${jobs.length===0 ? `<div class="empty"><div class="disp">📭 ยังไม่มีโครงการเปิดรับราคาในขณะนี้</div></div>` :
       jobs.map(j=>`
@@ -1032,6 +1044,13 @@ async function submitItemBid(jobId, itemId){
 function vendorDataTabHtml(){
   const catOpts = VENDOR_STATE.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
   return `
+    <div class="tab-intro">
+      <div class="ti-ico">🏷️</div>
+      <div>
+        <div class="ti-title">เสนอสินค้าทั่วไป คืออะไร?</div>
+        <div class="ti-text">แท็บนี้เปิดกว้างให้ท่านนำเสนอสินค้าหรือผลิตภัณฑ์ของบริษัทได้อย่างอิสระ โดยไม่จำเป็นต้องผูกกับโครงการหรือสเปคใดที่แอดมินกำหนดไว้ ท่านสามารถเสนอสินค้าใดก็ได้ตามหมวดงานที่เกี่ยวข้อง เพื่อให้ทางมหาวิทยาลัยมีข้อมูลสินค้าของท่านเก็บไว้พิจารณาประกอบการจัดซื้อในโอกาสต่อไป</div>
+      </div>
+    </div>
     <div class="card">
       <span class="eyebrow">🏷️ เสนอข้อมูลสินค้า/ผลิตภัณฑ์ (ไม่ผูกกับโครงการใด)</span>
       <p class="hint" style="margin-top:0;">ใช้สำหรับผู้เสนอราคานำเสนอสินค้าทั่วไปของบริษัทตามหมวดงาน ไม่จำเป็นต้องเกี่ยวข้องกับโครงการที่เปิดประมูลอยู่ · ผู้เสนอราคารายอื่นเห็นได้เฉพาะชื่อบริษัทและชื่อผลิตภัณฑ์ ส่วน “ราคา” และเบอร์โทรเห็นเฉพาะแอดมินเท่านั้น</p>
