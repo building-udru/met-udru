@@ -10,14 +10,14 @@
   :root{
     --bg:#ffffff;
     --bg-2:#ffffff;
-    --bg-3:#f4f6f5;
-    --line: #e7e9e4;
-    --line-soft: #edefe9;
-    --ink:#0f2340;
-    --ink-soft:#5b6b7d;
-    --ink-dim:#93a0ac;
-    --safety:#e0631e;
-    --safety-deep:#b84e14;
+    --bg-3:#f5f4fb;
+    --line: #e9e7f3;
+    --line-soft: #efedf8;
+    --ink:#241b45;
+    --ink-soft:#6b6486;
+    --ink-dim:#9d97b3;
+    --safety:#7c5cf5;
+    --safety-deep:#5b3fd9;
     --gold:#d9971c;
     --flame:#d1483a;
     --ok:#2f7a4f;
@@ -26,33 +26,62 @@
     --warn-bg: #fbf1de;
     --white:#ffffff;
     --radius:16px;
-    --shadow: 0 1px 2px rgba(15,35,64,.04), 0 10px 28px -16px rgba(15,35,64,.14);
+    --sidebar-w:248px;
+    --shadow: 0 1px 2px rgba(36,27,69,.04), 0 10px 28px -16px rgba(36,27,69,.14);
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
-  body{background:var(--bg);color:var(--ink);font-family:'Anuphan',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;}
+  body{background:var(--bg-3);color:var(--ink);font-family:'Anuphan',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;}
   h1,h2,h3,.disp{font-family:'Anuphan',sans-serif;letter-spacing:-.01em;}
   .mono{font-family:'JetBrains Mono',monospace;}
   a{color:var(--safety-deep);transition:opacity .12s ease;}
   a:hover{opacity:.75;}
 
-  .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;position:sticky;top:0;z-index:30;
-    background:rgba(255,255,255,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);flex-wrap:wrap;gap:10px;}
-  .brand{display:flex;align-items:center;gap:13px;}
-  .brand .mark{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;
-    font-family:'Anuphan';font-weight:800;font-size:17px;flex:none;letter-spacing:-.02em;
-    background:linear-gradient(150deg, var(--safety), var(--safety-deep));box-shadow:0 6px 16px -6px rgba(224,99,30,.55);}
-  .brand h1{font-size:17px;margin:0;font-weight:700;letter-spacing:-.01em;color:var(--ink);}
-  .brand .sub{font-size:12px;color:var(--ink-soft);margin-top:2px;}
-  .brand .org{font-size:11px;color:var(--ink-dim);margin-top:1px;}
-  .wrap{max-width:1080px;margin:0 auto;padding:32px 28px;}
+  /* ===== App shell: sidebar + main (admin dashboard look) ===== */
+  .shell{display:flex;min-height:100vh;align-items:flex-start;}
+  .sidebar{width:var(--sidebar-w);flex:none;background:var(--white);border-right:1px solid var(--line);min-height:100vh;
+    position:sticky;top:0;padding:22px 16px;display:flex;flex-direction:column;gap:4px;}
+  .mark{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;
+    font-family:'Anuphan';font-weight:800;font-size:15px;flex:none;letter-spacing:-.02em;margin:0;
+    background:linear-gradient(150deg, var(--safety), var(--safety-deep));box-shadow:0 6px 16px -6px rgba(92,63,217,.5);}
+  .sidebar-brand{display:flex;align-items:center;gap:11px;padding:6px 10px 20px;}
+  .sidebar-brand .name{font-size:15.5px;font-weight:800;color:var(--ink);line-height:1.15;}
+  .sidebar-brand .org{font-size:10.5px;color:var(--ink-dim);margin-top:1px;}
+  .navlink{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;font-size:14px;font-weight:600;color:var(--ink-soft);
+    cursor:pointer;transition:background .12s ease,color .12s ease;}
+  .navlink .ico{font-size:16px;width:18px;text-align:center;flex:none;}
+  .navlink:hover{background:var(--bg-3);color:var(--ink);}
+  .navlink.active{background:linear-gradient(120deg,#efe9ff,#f3eeff);color:var(--safety-deep);}
+  .navlink .cnt{margin-left:auto;font-family:'JetBrains Mono';font-size:10.5px;color:var(--ink-dim);}
+  .navlink.active .cnt{color:var(--safety-deep);}
+  .sidebar-foot{margin-top:auto;padding:12px 10px 4px;font-size:11px;color:var(--ink-dim);}
+
+  .main{flex:1;min-width:0;}
+  .mainTop{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;position:sticky;top:0;z-index:30;
+    background:rgba(245,244,251,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);flex-wrap:wrap;gap:10px;}
+  .mainTop h1{font-size:20px;margin:0;font-weight:800;letter-spacing:-.01em;color:var(--ink);}
+  .mainTop .sub{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 32px;}
+
+  /* ===== Stat cards row (dashboard overview) ===== */
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+  .stat-card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);}
+  .stat-card .stat-ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:12px;}
+  .stat-card .stat-num{font-size:26px;font-weight:800;color:var(--ink);letter-spacing:-.02em;line-height:1;}
+  .stat-card .stat-label{font-size:12.5px;color:var(--ink-soft);margin-top:6px;font-weight:600;}
+  .stat-ico.p1{background:#efe9ff;color:#5b3fd9;}
+  .stat-ico.p2{background:#e7f3ff;color:#2568c9;}
+  .stat-ico.p3{background:#fdf0e3;color:#b5730f;}
+  .stat-ico.p4{background:#e9f7ee;color:#2f7a4f;}
+  @media(max-width:900px){ .stat-grid{grid-template-columns:repeat(2,1fr);} }
+  @media(max-width:640px){ .stat-grid{grid-template-columns:1fr;} }
 
   .btn{font-family:'Anuphan';font-weight:600;font-size:14.5px;border:1px solid var(--line);background:var(--white);color:var(--ink);
     padding:10px 18px;border-radius:999px;cursor:pointer;transition:transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease, color .12s ease;}
   .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px -8px rgba(15,35,64,.18);border-color:var(--ink-dim);}
   .btn:active{transform:translateY(0) scale(.98);box-shadow:0 2px 6px -4px rgba(15,35,64,.2);}
-  .btn-primary{background:linear-gradient(120deg, var(--safety), var(--safety-deep));border-color:transparent;color:#fff;font-weight:700;box-shadow:0 6px 16px -8px rgba(224,99,30,.5);}
-  .btn-primary:hover{filter:brightness(1.07);border-color:transparent;box-shadow:0 10px 22px -8px rgba(224,99,30,.6);}
+  .btn-primary{background:linear-gradient(120deg, var(--safety), var(--safety-deep));border-color:transparent;color:#fff;font-weight:700;box-shadow:0 6px 16px -8px rgba(92,63,217,.45);}
+  .btn-primary:hover{filter:brightness(1.07);border-color:transparent;box-shadow:0 10px 22px -8px rgba(92,63,217,.55);}
   .btn-primary:active{filter:brightness(.98);}
   .btn-ghost{background:transparent;border-color:var(--line);color:var(--ink-soft);}
   .btn-ghost:hover{background:var(--bg-3);color:var(--ink);}
@@ -70,7 +99,7 @@
   input,textarea,select{width:100%;font-family:'Anuphan';font-size:15px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--bg-3);color:var(--ink);transition:border-color .12s ease, box-shadow .12s ease, background .12s ease;}
   input::placeholder,textarea::placeholder{color:var(--ink-dim);}
   input:hover,textarea:hover,select:hover{border-color:var(--ink-dim);}
-  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--safety);box-shadow:0 0 0 3px rgba(224,99,30,.12);background:#fff;}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--safety);box-shadow:0 0 0 3px rgba(92,63,217,.12);background:#fff;}
   select{cursor:pointer;}
   textarea{resize:vertical;min-height:70px;}
   .hint{font-size:12px;color:var(--ink-dim);margin-top:5px;}
@@ -176,24 +205,42 @@
     .job-actions{justify-content:flex-start;}
     .row{flex-direction:column;}
     .spec-row .fields{grid-template-columns:1fr;}
+    .shell{flex-direction:column;}
+    .sidebar{width:100%;min-height:auto;position:static;border-right:none;border-bottom:1px solid var(--line);
+      flex-direction:row;align-items:center;padding:14px 16px;gap:10px;overflow-x:auto;}
+    .sidebar-brand{padding:0;flex:none;}
+    .sidebar-foot{display:none;}
+    #sidebarNav{display:flex;gap:6px;}
+    .navlink{white-space:nowrap;}
+    .mainTop{padding:16px 16px;}
   }
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="brand">
-    <div class="mark">MET</div>
-    <div>
-      <h1>ระบบเสนอราคางานก่อสร้าง</h1>
-      <div class="sub" id="topbarSub">กองอาคารและสถานที่</div>
-      <div class="org">มหาวิทยาลัยราชภัฏอุดรธานี</div>
+<div class="shell" id="shell">
+  <aside class="sidebar" id="sidebar" style="display:none;">
+    <div class="sidebar-brand">
+      <div class="mark">MET</div>
+      <div>
+        <div class="name">งานเสนอราคา</div>
+        <div class="org">กองอาคารและสถานที่ · UDRU</div>
+      </div>
     </div>
-  </div>
-  <div id="topbarActions"></div>
+    <div id="sidebarNav"></div>
+    <div class="sidebar-foot">โหมดผู้ดูแลระบบ</div>
+  </aside>
+  <main class="main">
+    <div class="mainTop">
+      <div>
+        <h1 id="mainTitle">ระบบเสนอราคางานก่อสร้าง</h1>
+        <div class="sub" id="topbarSub">กองอาคารและสถานที่</div>
+      </div>
+      <div id="topbarActions"></div>
+    </div>
+    <div class="wrap" id="app"><div class="empty">กำลังโหลด…</div></div>
+  </main>
 </div>
-
-<div class="wrap" id="app"><div class="empty">กำลังโหลด…</div></div>
 <div class="toast" id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -246,6 +293,9 @@ const TEST_MODE_NO_LOGIN = true;
 const app = document.getElementById('app');
 const topbarActions = document.getElementById('topbarActions');
 const topbarSub = document.getElementById('topbarSub');
+const mainTitle = document.getElementById('mainTitle');
+const sidebarEl = document.getElementById('sidebar');
+const shellEl = document.getElementById('shell');
 
 function toast(msg){
   const t = document.getElementById('toast');
@@ -267,10 +317,16 @@ const params = new URLSearchParams(location.search);
 const isVendor = params.has('vendor');
 
 if(isVendor){
-  topbarSub.textContent = 'พอร์ทัลสำหรับบริษัท';
+  sidebarEl.style.display = 'none';
+  shellEl.style.maxWidth = '860px';
+  shellEl.style.margin = '0 auto';
+  mainTitle.textContent = 'ระบบเสนอราคางานก่อสร้าง';
+  topbarSub.textContent = 'พอร์ทัลสำหรับบริษัท · กองอาคารและสถานที่ UDRU';
   topbarActions.innerHTML = '';
   renderVendorPortal();
 } else {
+  sidebarEl.style.display = 'flex';
+  mainTitle.textContent = 'ภาพรวม';
   topbarSub.textContent = 'หลังบ้านผู้ดูแล' + (TEST_MODE_NO_LOGIN ? ' (โหมดทดสอบ ไม่ได้ล็อกอิน)' : '');
   if(TEST_MODE_NO_LOGIN){
     renderAdmin({email:'โหมดทดสอบ — ยังไม่ได้ล็อกอิน'});
@@ -340,24 +396,42 @@ async function seedCategories(){
   await batch.commit();
 }
 
+function drawSidebarNav(){
+  const nav = document.getElementById('sidebarNav');
+  if(!nav) return;
+  nav.innerHTML = `
+    <div class="navlink ${ADMIN_STATE.tab==='bid'?'active':''}" onclick="setAdminTab('bid')"><span class="ico">📋</span>ประมูลราคาโครงการ<span class="cnt">${ADMIN_STATE.jobs.length}</span></div>
+    <div class="navlink ${ADMIN_STATE.tab==='data'?'active':''}" onclick="setAdminTab('data')"><span class="ico">📦</span>คลังข้อมูลสินค้า<span class="cnt">${ADMIN_STATE.products.length}</span></div>
+  `;
+}
+function statCardsHtml(){
+  const openJobs = ADMIN_STATE.jobs.filter(j=>j.status!=='closed').length;
+  const specCount = ADMIN_STATE.jobs.reduce((sum,j)=>sum+((j.items||[]).length),0);
+  return `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-ico p1">📋</div><div class="stat-num">${ADMIN_STATE.jobs.length}</div><div class="stat-label">โครงการทั้งหมด</div></div>
+      <div class="stat-card"><div class="stat-ico p2">🟢</div><div class="stat-num">${openJobs}</div><div class="stat-label">เปิดรับราคาอยู่</div></div>
+      <div class="stat-card"><div class="stat-ico p3">📄</div><div class="stat-num">${specCount}</div><div class="stat-label">รายการสเปคทั้งหมด</div></div>
+      <div class="stat-card"><div class="stat-ico p4">📦</div><div class="stat-num">${ADMIN_STATE.products.length}</div><div class="stat-label">สินค้าที่เสนอเข้ามา</div></div>
+    </div>`;
+}
 function drawAdminShell(){
   const vendorLink = location.origin + location.pathname + '?vendor=1';
+  drawSidebarNav();
+  mainTitle.textContent = ADMIN_STATE.tab==='bid' ? 'ประมูลราคาโครงการ' : 'คลังข้อมูลสินค้า';
   app.innerHTML = `
+    ${statCardsHtml()}
     <div class="card">
       <span class="eyebrow">🔗 ลิงก์เดียวสำหรับทุกบริษัท</span>
       <p class="hint" style="margin-top:0;">ส่งลิงก์นี้ให้บริษัททุกแห่ง ใช้ลิงก์เดียวกันทั้งหมด ฝั่งบริษัทจะแก้ไขหน้าเว็บเองไม่ได้ ทำได้แค่กรอกและส่งข้อมูลของตนเอง</p>
       <div class="link-box"><input readonly value="${vendorLink}" onclick="this.select()">
         <button class="btn btn-ghost btn-sm" onclick="copyLink('${vendorLink}')">📋 คัดลอกลิงก์</button></div>
     </div>
-    <div class="tabbar">
-      <div class="tabbtn ${ADMIN_STATE.tab==='bid'?'active':''}" onclick="setAdminTab('bid')"><span class="ico">📋</span>ประมูลราคาโครงการ <span class="cnt">${ADMIN_STATE.jobs.length}</span></div>
-      <div class="tabbtn ${ADMIN_STATE.tab==='data'?'active':''}" onclick="setAdminTab('data')"><span class="ico">📦</span>คลังข้อมูลสินค้า <span class="cnt">${ADMIN_STATE.products.length}</span></div>
-    </div>
     <div id="adminTabContent"></div>
   `;
   drawAdminTabContent();
 }
-function setAdminTab(t){ ADMIN_STATE.tab = t; drawAdminTabContent(); }
+function setAdminTab(t){ ADMIN_STATE.tab = t; drawSidebarNav(); mainTitle.textContent = t==='bid' ? 'ประมูลราคาโครงการ' : 'คลังข้อมูลสินค้า'; drawAdminTabContent(); }
 function copyLink(url){ navigator.clipboard.writeText(url).then(()=>toast('📋 คัดลอกลิงก์แล้ว')); }
 
 function drawAdminTabContent(){
