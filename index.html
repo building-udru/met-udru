@@ -730,10 +730,29 @@ function vendorStatCardsHtml(){
       <div class="stat-card"><div class="stat-ico p4">🏢</div><div class="stat-num">${VENDOR_STATE.companyName ? '1' : '0'}</div><div class="stat-label">บริษัทของผู้เสนอราคา${VENDOR_STATE.companyName ? ' · '+escapeHtml(VENDOR_STATE.companyName) : ''}</div></div>
     </div>`;
 }
+function vendorTabIntroHtml(){
+  if(VENDOR_STATE.tab==='bid'){
+    return `<div class="tab-intro">
+      <div class="ti-ico">📋</div>
+      <div>
+        <div class="ti-title">ประมูลราคาโครงการ คืออะไร?</div>
+        <div class="ti-text">แท็บนี้ใช้สำหรับเสนอราคาตามความต้องการที่ทางมหาวิทยาลัยกำหนดไว้อย่างชัดเจน โดยแอดมินจะระบุชนิดและประเภทของสินค้าที่ต้องการไว้ในแต่ละโครงการล่วงหน้า ผู้เสนอราคาเพียงเลือกโครงการและรายการสเปคที่ตรงกับสินค้าของท่าน แล้วนำเสนอผลิตภัณฑ์พร้อมราคาให้ตรงตามที่ระบุไว้เท่านั้น</div>
+      </div>
+    </div>`;
+  }
+  return `<div class="tab-intro">
+    <div class="ti-ico">🏷️</div>
+    <div>
+      <div class="ti-title">เสนอสินค้าทั่วไป คืออะไร?</div>
+      <div class="ti-text">แท็บนี้เปิดกว้างให้ท่านนำเสนอสินค้าหรือผลิตภัณฑ์ของบริษัทได้อย่างอิสระ โดยไม่จำเป็นต้องผูกกับโครงการหรือสเปคใดที่แอดมินกำหนดไว้ ท่านสามารถเสนอสินค้าใดก็ได้ตามหมวดงานที่เกี่ยวข้อง เพื่อให้ทางมหาวิทยาลัยมีข้อมูลสินค้าของท่านเก็บไว้พิจารณาประกอบการจัดซื้อในโอกาสต่อไป</div>
+    </div>
+  </div>`;
+}
 function drawVendorShell(){
   drawVendorSidebarNav();
   mainTitle.innerHTML = (VENDOR_STATE.tab==='bid' ? 'ประมูลราคาโครงการ' : 'เสนอสินค้าทั่วไป') + ' <span class="badge badge-role vendor" id="roleBadge">🧾 ผู้เสนอราคา</span>';
   app.innerHTML = `
+    ${vendorTabIntroHtml()}
     ${vendorStatCardsHtml()}
     <div id="vendorContent"></div>
   `;
@@ -771,13 +790,6 @@ function drawVendorContent(){
 function vendorJobListHtml(){
   const jobs = VENDOR_STATE.jobs;
   return `
-    <div class="tab-intro">
-      <div class="ti-ico">📋</div>
-      <div>
-        <div class="ti-title">ประมูลราคาโครงการ คืออะไร?</div>
-        <div class="ti-text">แท็บนี้ใช้สำหรับเสนอราคาตามความต้องการที่ทางมหาวิทยาลัยกำหนดไว้อย่างชัดเจน โดยแอดมินจะระบุชนิดและประเภทของสินค้าที่ต้องการไว้ในแต่ละโครงการล่วงหน้า ผู้เสนอราคาเพียงเลือกโครงการและรายการสเปคที่ตรงกับสินค้าของท่าน แล้วนำเสนอผลิตภัณฑ์พร้อมราคาให้ตรงตามที่ระบุไว้เท่านั้น</div>
-      </div>
-    </div>
     <div class="card">
     <span class="eyebrow">โครงการที่เปิดรับราคา (${jobs.length})</span>
     ${jobs.length===0 ? `<div class="empty"><div class="disp">📭 ยังไม่มีโครงการเปิดรับราคาในขณะนี้</div></div>` :
@@ -1044,13 +1056,6 @@ async function submitItemBid(jobId, itemId){
 function vendorDataTabHtml(){
   const catOpts = VENDOR_STATE.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
   return `
-    <div class="tab-intro">
-      <div class="ti-ico">🏷️</div>
-      <div>
-        <div class="ti-title">เสนอสินค้าทั่วไป คืออะไร?</div>
-        <div class="ti-text">แท็บนี้เปิดกว้างให้ท่านนำเสนอสินค้าหรือผลิตภัณฑ์ของบริษัทได้อย่างอิสระ โดยไม่จำเป็นต้องผูกกับโครงการหรือสเปคใดที่แอดมินกำหนดไว้ ท่านสามารถเสนอสินค้าใดก็ได้ตามหมวดงานที่เกี่ยวข้อง เพื่อให้ทางมหาวิทยาลัยมีข้อมูลสินค้าของท่านเก็บไว้พิจารณาประกอบการจัดซื้อในโอกาสต่อไป</div>
-      </div>
-    </div>
     <div class="card">
       <span class="eyebrow">🏷️ เสนอข้อมูลสินค้า/ผลิตภัณฑ์ (ไม่ผูกกับโครงการใด)</span>
       <p class="hint" style="margin-top:0;">ใช้สำหรับผู้เสนอราคานำเสนอสินค้าทั่วไปของบริษัทตามหมวดงาน ไม่จำเป็นต้องเกี่ยวข้องกับโครงการที่เปิดประมูลอยู่ · ผู้เสนอราคารายอื่นเห็นได้เฉพาะชื่อบริษัทและชื่อผลิตภัณฑ์ ส่วน “ราคา” และเบอร์โทรเห็นเฉพาะแอดมินเท่านั้น</p>
@@ -1068,11 +1073,8 @@ function vendorDataTabHtml(){
     </div>
     <div class="card">
       <span class="eyebrow">🔍 ค้นหาสินค้าที่เคยส่ง</span>
-      <p class="hint" style="margin-top:0;">ค้นหาจากชื่อบริษัท เบอร์โทร หรือชื่อผลิตภัณฑ์ — กรอกอย่างน้อยหนึ่งช่อง</p>
-      <div class="row">
-        <div><label style="margin-top:0;">ชื่อบริษัท</label><input id="searchCompany" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName)}"></div>
-        <div><label style="margin-top:0;">เบอร์ติดต่อ</label><input id="searchPhone" placeholder="08x-xxx-xxxx" value="${escapeHtml(VENDOR_STATE.companyPhone)}"></div>
-      </div>
+      <p class="hint" style="margin-top:0;">ค้นหาจากชื่อบริษัทหรือชื่อผลิตภัณฑ์ — กรอกอย่างน้อยหนึ่งช่อง</p>
+      <label style="margin-top:0;">ชื่อบริษัท</label><input id="searchCompany" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName)}">
       <label>ชื่อผลิตภัณฑ์</label><input id="searchProductName" placeholder="พิมพ์ชื่อผลิตภัณฑ์ที่ต้องการค้นหา">
       <button class="btn btn-primary btn-sm" style="margin-top:14px;" onclick="loadMyProducts()">🔍 ค้นหา</button>
       <div id="myProductsList" class="hint" style="margin-top:10px;">กรอกข้อมูลด้านบน แล้วกด “ค้นหา” เพื่อดูและแก้ไขรายการที่เคยส่ง</div>
@@ -1113,23 +1115,17 @@ function drawVendorCatalog(){
 
 async function loadMyProducts(){
   const companyQuery = (document.getElementById('searchCompany').value||'').trim();
-  const phoneQuery = (document.getElementById('searchPhone').value||'').trim();
   const nameQuery = (document.getElementById('searchProductName').value||'').trim().toLowerCase();
-  if(!companyQuery && !phoneQuery && !nameQuery){
-    toast('กรุณากรอกชื่อบริษัท เบอร์โทร หรือชื่อผลิตภัณฑ์อย่างน้อยหนึ่งช่อง');
+  if(!companyQuery && !nameQuery){
+    toast('กรุณากรอกชื่อบริษัทหรือชื่อผลิตภัณฑ์อย่างน้อยหนึ่งช่อง');
     return;
   }
   const el = document.getElementById('myProductsList');
   el.innerHTML = 'กำลังค้นหา…';
   let list = [];
   try{
-    if(phoneQuery){
-      const snap = await db.collection('products').where('companyPhone','==', phoneQuery).get();
-      list = snap.docs.map(d=>({id:d.id, ...d.data()}));
-    } else {
-      const snap = await db.collection('products').get();
-      list = snap.docs.map(d=>({id:d.id, ...d.data()}));
-    }
+    const snap = await db.collection('products').get();
+    list = snap.docs.map(d=>({id:d.id, ...d.data()}));
     if(companyQuery){
       const cLower = companyQuery.toLowerCase();
       list = list.filter(p=>(p.companyName||'').toLowerCase().includes(cLower));
