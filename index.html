@@ -317,6 +317,22 @@ function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'
 function uid(){ return Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4); }
 function normPhone(p){ return (p||'').replace(/[^0-9]/g,''); }
 
+/* ---------------------------------------------------------------
+   REALTIME LISTENER REGISTRY
+   ทุก onSnapshot ที่เปิดไว้ ต้อง unsubscribe ก่อนเปิดใหม่เสมอ (กัน listener
+   ค้างซ้อนกันเวลาสลับแท็บ/หมวดงาน ซึ่งจะทำให้ยิ่งช้าลงเมื่อใช้งานไปนาน ๆ)
+--------------------------------------------------------------- */
+const ACTIVE_LISTENERS = {};
+function setListener(key, unsub){ if(ACTIVE_LISTENERS[key]) ACTIVE_LISTENERS[key](); ACTIVE_LISTENERS[key] = unsub; }
+function clearListener(key){ if(ACTIVE_LISTENERS[key]){ ACTIVE_LISTENERS[key](); delete ACTIVE_LISTENERS[key]; } }
+
+/* นับจำนวนเอกสารด้วย count() aggregation — เร็วมากแม้ collection จะมีเป็นหมื่นรายการ
+   เพราะไม่ต้องโหลดเอกสารจริงลงมาเลยแม้แต่ตัวเดียว ใช้แค่แสดงตัวเลขบนชิป/สถิติ */
+async function countDocs(query){
+  try{ const agg = await query.count().get(); return agg.data().count; }
+  catch(e){ console.warn('count() ไม่สำเร็จ', e); return null; }
+}
+
 /* =========================================================
    ROUTER
    - ?vendor=1  -> ลิงก์เดียวสำหรับทุกบริษัท/ผู้เสนอราคา (ประมูลราคา + ข้อมูลสินค้า)
@@ -375,7 +391,8 @@ function doLogin(){
 /* =========================================================
    ADMIN: STATE + DASHBOARD SHELL
 ========================================================= */
-let ADMIN_STATE = { tab:'bid', categories:[], jobs:[], products:[], activeCat:'all', productFilter:'', productCat:'all' };
+let ADMIN_STATE = { tab:'bid', categories:[], jobs:[], products:[], activeCat:'all', productFilter:'', productCat:'all',
+  productsLimit:25, productsHasMore:false, productsTotalCount:null, categoryProductCounts:{} };
 
 function renderAdmin(user){
   topbarActions.innerHTML = TEST_MODE_NO_LOGIN ? `
@@ -396,13 +413,44 @@ async function loadAdminData(){
   if(!catSnap || catSnap.empty){ await seedCategories(); return loadAdminData(); }
   ADMIN_STATE.categories = catSnap.docs.map(d=>({id:d.id, ...d.data()}));
 
-  const jobSnap = await db.collection('jobs').orderBy('createdAt','desc').get();
-  ADMIN_STATE.jobs = jobSnap.docs.map(d=>({id:d.id, items:[], ...d.data()}));
-
-  const prodSnap = await db.collection('products').orderBy('submittedAt','desc').get().catch(()=>null);
-  ADMIN_STATE.products = prodSnap ? prodSnap.docs.map(d=>({id:d.id, ...d.data()})) : [];
-
   drawAdminShell();
+
+  /* โครงการ: จำนวนไม่เยอะ (แอดมินเป็นคนสร้างเอง) เปิดฟังสดได้เต็มรูปแบบ อัปเดตทันทีที่มีการแก้ไข/ลบ/สร้างใหม่ */
+  setListener('adminJobs', db.collection('jobs').orderBy('createdAt','desc').onSnapshot(snap=>{
+    ADMIN_STATE.jobs = snap.docs.map(d=>({id:d.id, items:[], ...d.data()}));
+    drawSidebarNav();
+    const sg = document.querySelector('.stat-grid'); if(sg) sg.outerHTML = statCardsHtml();
+    if(ADMIN_STATE.tab==='bid') drawAdminTabContent();
+  }, err=>console.error('jobs listener error', err)));
+
+  /* คลังสินค้า: อาจสะสมเยอะจากผู้เสนอราคาหลายบริษัท จึงโหลดทีละหน้า + ฟังสดเฉพาะหน้าที่กำลังดู */
+  subscribeAdminProducts();
+  refreshAdminProductCounts();
+}
+
+function subscribeAdminProducts(){
+  let q = db.collection('products');
+  q = ADMIN_STATE.productCat==='all'
+    ? q.orderBy('submittedAt','desc')
+    : q.where('categoryId','==',ADMIN_STATE.productCat).orderBy('submittedAt','desc');
+  q = q.limit(ADMIN_STATE.productsLimit);
+  setListener('adminProducts', q.onSnapshot(snap=>{
+    ADMIN_STATE.products = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    ADMIN_STATE.productsHasMore = snap.size === ADMIN_STATE.productsLimit;
+    if(ADMIN_STATE.tab==='data') drawAdminTabContent();
+  }, err=>{
+    console.error('products listener error', err);
+    toast('โหลดคลังสินค้าไม่สำเร็จ — ถ้าเพิ่งเลือกหมวดงาน อาจต้องรอสร้าง Index ใน Firestore ก่อน (ดูลิงก์ใน Console)');
+  }));
+}
+function loadMoreAdminProducts(){ ADMIN_STATE.productsLimit += 25; subscribeAdminProducts(); }
+async function refreshAdminProductCounts(){
+  ADMIN_STATE.productsTotalCount = await countDocs(db.collection('products'));
+  const counts = {};
+  await Promise.all(ADMIN_STATE.categories.map(async c=>{ counts[c.id] = await countDocs(db.collection('products').where('categoryId','==',c.id)); }));
+  ADMIN_STATE.categoryProductCounts = counts;
+  const sg = document.querySelector('.stat-grid'); if(sg) sg.outerHTML = statCardsHtml();
+  if(ADMIN_STATE.tab==='data') drawAdminTabContent();
 }
 
 async function seedCategories(){
@@ -422,12 +470,13 @@ function drawSidebarNav(){
 function statCardsHtml(){
   const openJobs = ADMIN_STATE.jobs.filter(j=>j.status!=='closed').length;
   const specCount = ADMIN_STATE.jobs.reduce((sum,j)=>sum+((j.items||[]).length),0);
+  const prodTotal = ADMIN_STATE.productsTotalCount!=null ? ADMIN_STATE.productsTotalCount : ADMIN_STATE.products.length;
   return `
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-ico p1">📋</div><div class="stat-num">${ADMIN_STATE.jobs.length}</div><div class="stat-label">โครงการทั้งหมด</div></div>
       <div class="stat-card"><div class="stat-ico p2">🟢</div><div class="stat-num">${openJobs}</div><div class="stat-label">เปิดรับราคาอยู่</div></div>
       <div class="stat-card"><div class="stat-ico p3">📄</div><div class="stat-num">${specCount}</div><div class="stat-label">รายการสเปคทั้งหมด</div></div>
-      <div class="stat-card"><div class="stat-ico p4">📦</div><div class="stat-num">${ADMIN_STATE.products.length}</div><div class="stat-label">สินค้าที่เสนอเข้ามา</div></div>
+      <div class="stat-card"><div class="stat-ico p4">📦</div><div class="stat-num">${prodTotal}</div><div class="stat-label">สินค้าที่เสนอเข้ามา</div></div>
     </div>`;
 }
 function drawAdminShell(){
@@ -525,22 +574,31 @@ async function deleteJob(jobId){
 }
 
 let openQuotePanels = new Set();
-async function toggleQuotes(jobId){
+function toggleQuotes(jobId){
   const el = document.getElementById('quotes-'+jobId);
-  if(openQuotePanels.has(jobId)){ openQuotePanels.delete(jobId); el.innerHTML=''; return; }
+  if(openQuotePanels.has(jobId)){
+    openQuotePanels.delete(jobId);
+    clearListener('quotes-'+jobId);
+    el.innerHTML='';
+    return;
+  }
   openQuotePanels.add(jobId);
   el.innerHTML = `<div class="empty" style="padding:16px;">กำลังโหลดใบเสนอราคา…</div>`;
   const job = ADMIN_STATE.jobs.find(j=>j.id===jobId);
   const items = job.items || [];
-  const snap = await db.collection('quotes').where('jobId','==',jobId).get();
-  const bidsDocs = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  setListener('quotes-'+jobId, db.collection('quotes').where('jobId','==',jobId).onSnapshot(snap=>{
+    const bidsDocs = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderQuotesPanel(el, items, bidsDocs);
+  }, err=>{ console.error('quotes listener error', err); el.innerHTML = `<div class="empty" style="padding:16px;">โหลดใบเสนอราคาไม่สำเร็จ</div>`; }));
+}
+function renderQuotesPanel(el, items, bidsDocs){
   if(bidsDocs.length===0){
     el.innerHTML = `<div class="empty" style="padding:16px;">ยังไม่มีผู้เสนอราคาเข้ามา</div>`;
     return;
   }
   const catIds = [...new Set(items.map(i=>i.categoryId))];
   el.innerHTML = `<div class="card" style="margin-top:8px;">
-    <span class="eyebrow">ใบเสนอราคาทั้งหมด (${bidsDocs.length} ผู้เสนอราคา) — จัดกลุ่มตามรายการสเปค เพื่อเทียบราคาสินค้าชนิดเดียวกัน · เห็นราคาได้เฉพาะแอดมิน · ไฮไลต์เขียว = ราคาต่ำสุดของรายการนั้น</span>
+    <span class="eyebrow">ใบเสนอราคาทั้งหมด (${bidsDocs.length} ผู้เสนอราคา) — จัดกลุ่มตามรายการสเปค เพื่อเทียบราคาสินค้าชนิดเดียวกัน · เห็นราคาได้เฉพาะแอดมิน · ไฮไลต์เขียว = ราคาต่ำสุดของรายการนั้น · อัปเดตสดอัตโนมัติ</span>
     ${catIds.map(cid=>`
       <div class="spec-group-title">${escapeHtml(catName(cid))}</div>
       ${items.filter(it=>it.categoryId===cid).map(it=>{
@@ -648,25 +706,25 @@ function adminDataTabHtml(){
   const cat = ADMIN_STATE.productCat;
   const cats = ADMIN_STATE.categories;
   const list = ADMIN_STATE.products.filter(p=>{
-    if(cat!=='all' && p.categoryId!==cat) return false;
     if(!q) return true;
     return (p.productName||'').toLowerCase().includes(q) || (p.companyName||'').toLowerCase().includes(q);
   });
+  const totalLabel = ADMIN_STATE.productsTotalCount!=null ? ADMIN_STATE.productsTotalCount : ADMIN_STATE.products.length;
   return `
     <div class="card">
       <span class="eyebrow">หมวดงาน</span>
       <div>
-        <span class="cat-chip ${cat==='all'?'active':''}" onclick="setProductCat('all')">ทั้งหมด (${ADMIN_STATE.products.length})</span>
+        <span class="cat-chip ${cat==='all'?'active':''}" onclick="setProductCat('all')">ทั้งหมด (${totalLabel})</span>
         ${cats.map(c=>{
-          const count = ADMIN_STATE.products.filter(p=>p.categoryId===c.id).length;
-          return `<span class="cat-chip ${cat===c.id?'active':''}" onclick="setProductCat('${c.id}')">${escapeHtml(c.name)} (${count})</span>`;
+          const count = ADMIN_STATE.categoryProductCounts[c.id];
+          return `<span class="cat-chip ${cat===c.id?'active':''}" onclick="setProductCat('${c.id}')">${escapeHtml(c.name)}${count!=null?' ('+count+')':''}</span>`;
         }).join('')}
       </div>
-      <label>ค้นหาชื่อสินค้า / ผู้เสนอราคา</label>
+      <label>ค้นหาชื่อสินค้า / ผู้เสนอราคา (ค้นหาในรายการที่โหลดไว้ด้านล่างเท่านั้น — กด “โหลดเพิ่ม” ถ้าหาไม่เจอ)</label>
       <input placeholder="พิมพ์เพื่อค้นหา" value="${escapeHtml(ADMIN_STATE.productFilter||'')}" oninput="ADMIN_STATE.productFilter=this.value; drawAdminTabContent();">
     </div>
     <div class="card">
-      <span class="eyebrow">สินค้าที่ผู้เสนอราคาเสนอเข้ามาอิสระ (${list.length}) — เห็นราคาได้เฉพาะแอดมิน</span>
+      <span class="eyebrow">สินค้าที่ผู้เสนอราคาเสนอเข้ามาอิสระ (แสดง ${list.length} จาก ${totalLabel} รายการ · อัปเดตสด) — เห็นราคาได้เฉพาะแอดมิน</span>
       ${list.length===0 ? `<div class="empty"><div class="disp">📭 ยังไม่มีข้อมูลสินค้า</div>ให้ผู้เสนอราคาเข้าลิงก์เดียวกันแล้วเลือกแท็บ “เสนอสินค้าทั่วไป”</div>` :
         list.map(p=>`
         <div class="prod-card">
@@ -684,15 +742,22 @@ function adminDataTabHtml(){
           ${p.fileURL?`<div class="quote-file">📎 <a href="${p.fileURL}" target="_blank" rel="noopener">${escapeHtml(p.fileName||'เอกสารแนบ/รูปภาพ')}</a></div>`:''}
           <div style="margin-top:8px;"><button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">🗑️ ลบรายการนี้</button></div>
         </div>`).join('')}
+      ${ADMIN_STATE.productsHasMore ? `<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px;" onclick="loadMoreAdminProducts()">⬇️ โหลดเพิ่ม</button>` : ''}
     </div>`;
 }
-function setProductCat(id){ ADMIN_STATE.productCat = id; drawAdminTabContent(); }
+function setProductCat(id){
+  ADMIN_STATE.productCat = id;
+  ADMIN_STATE.productsLimit = 25;
+  subscribeAdminProducts();
+  drawAdminTabContent();
+}
 async function deleteProduct(id){
   if(!confirm('ยืนยันลบรายการสินค้านี้?')) return;
   await db.collection('products').doc(id).delete();
   await db.collection('publicProducts').doc(id).delete().catch(()=>{});
   ADMIN_STATE.products = ADMIN_STATE.products.filter(p=>p.id!==id);
   drawAdminTabContent();
+  refreshAdminProductCounts();
   toast('🗑️ ลบรายการแล้ว');
 }
 
@@ -702,15 +767,21 @@ async function deleteProduct(id){
    เห็นเฉพาะแอดมินเท่านั้น
 ========================================================= */
 let VENDOR_STATE = { tab:'bid', companyName:'', companyPhone:'', categories:[], jobs:[], activeJobId:null, activeJob:null,
-  publicBids:[], existingBid:null, editingProductId:null, myProducts:[], dataCat:'all', catalog:[] };
+  publicBids:[], existingBid:null, editingProductId:null, myProducts:[], dataCat:'all', catalog:[],
+  catalogLimit:25, catalogHasMore:false, catalogTotalCount:null, categoryProductCounts:{} };
 
 async function renderVendorPortal(){
   app.innerHTML = `<div class="empty">กำลังโหลด…</div>`;
   const catSnap = await db.collection('categories').orderBy('order').get().catch(()=>null);
   VENDOR_STATE.categories = catSnap ? catSnap.docs.map(d=>({id:d.id, ...d.data()})) : [];
-  const jobSnap = await db.collection('jobs').where('status','==','open').get().catch(()=>null);
-  VENDOR_STATE.jobs = jobSnap ? jobSnap.docs.map(d=>({id:d.id, items:[], ...d.data()})) : [];
   drawVendorShell();
+  /* โครงการที่เปิดรับราคา: ฟังสด เพื่อให้บริษัทเห็นโครงการใหม่/สถานะเปลี่ยนทันทีโดยไม่ต้องรีเฟรชหน้า */
+  setListener('vendorJobs', db.collection('jobs').where('status','==','open').onSnapshot(snap=>{
+    VENDOR_STATE.jobs = snap.docs.map(d=>({id:d.id, items:[], ...d.data()}));
+    drawVendorSidebarNav();
+    const sg = document.querySelector('.stat-grid'); if(sg) sg.outerHTML = vendorStatCardsHtml();
+    if(VENDOR_STATE.tab==='bid' && !VENDOR_STATE.activeJobId) drawVendorContent();
+  }, err=>console.error('vendor jobs listener error', err)));
 }
 function vCatName(id){ const c = VENDOR_STATE.categories.find(c=>c.id===id); return c ? c.name : 'ไม่ระบุหมวดงาน'; }
 
@@ -761,7 +832,12 @@ function drawVendorShell(){
   `;
   drawVendorContent();
 }
-function setVendorTab(t){ VENDOR_STATE.tab=t; VENDOR_STATE.activeJobId=null; drawVendorShell(); }
+function setVendorTab(t){
+  clearListener('vendorCatalog');
+  clearListener('vendorPublicBids');
+  VENDOR_STATE.tab=t; VENDOR_STATE.activeJobId=null; VENDOR_STATE.catalogLimit=25;
+  drawVendorShell();
+}
 function requirePhone(){
   const phone = normPhone(VENDOR_STATE.companyPhone);
   if(!VENDOR_STATE.companyName.trim() || !phone){ toast('กรุณากรอกชื่อบริษัทและเบอร์ติดต่อก่อน'); return null; }
@@ -813,7 +889,7 @@ function openVendorJob(jobId){
   VENDOR_STATE.activeJobId = jobId;
   drawVendorContent();
 }
-function backToJobList(){ VENDOR_STATE.activeJobId = null; drawVendorContent(); }
+function backToJobList(){ clearListener('vendorPublicBids'); VENDOR_STATE.activeJobId = null; drawVendorContent(); }
 
 /* ---- ดูรายชื่อผู้เสนอราคาทั้งหมดที่เสนอในโครงการนี้ (เห็นเฉพาะชื่อบริษัท/ผลิตภัณฑ์/รายละเอียด ไม่มีราคา) ---- */
 async function openAllOffersModal(jobId){
@@ -873,8 +949,10 @@ async function loadVendorJobDetail(jobId){
   VENDOR_STATE.activeJob = job;
   VENDOR_STATE.existingBid = null;
 
-  const pubSnap = await db.collection('publicBids').where('jobId','==',jobId).get().catch(()=>null);
-  VENDOR_STATE.publicBids = pubSnap ? pubSnap.docs.map(d=>d.data()) : [];
+  setListener('vendorPublicBids', db.collection('publicBids').where('jobId','==',jobId).onSnapshot(snap=>{
+    VENDOR_STATE.publicBids = snap.docs.map(d=>d.data());
+    drawVendorJobDetailBody();
+  }, err=>console.error('publicBids listener error', err)));
 
   const phone = normPhone(VENDOR_STATE.companyPhone);
   if(phone){
@@ -1090,33 +1168,54 @@ function vendorDataTabHtml(){
 }
 function setDataCat(id){
   VENDOR_STATE.dataCat=id;
-  drawVendorCatalog();
+  VENDOR_STATE.catalogLimit = 25;
+  subscribeVendorCatalog();
   const chipsEl = document.getElementById('dataCatalogChips');
   if(chipsEl) chipsEl.innerHTML = dataCatChipsHtml();
 }
 function dataCatChipsHtml(){
   const cat = VENDOR_STATE.dataCat;
-  const counts = {};
-  VENDOR_STATE.catalog.forEach(p=>{ counts[p.categoryId] = (counts[p.categoryId]||0) + 1; });
+  const total = VENDOR_STATE.catalogTotalCount;
+  const counts = VENDOR_STATE.categoryProductCounts || {};
   return `
-    <span class="cat-chip ${cat==='all'?'active':''}" onclick="setDataCat('all')">ทั้งหมด (${VENDOR_STATE.catalog.length})</span>
-    ${VENDOR_STATE.categories.map(c=>`<span class="cat-chip ${cat===c.id?'active':''}" onclick="setDataCat('${c.id}')">${escapeHtml(c.name)} (${counts[c.id]||0})</span>`).join('')}
+    <span class="cat-chip ${cat==='all'?'active':''}" onclick="setDataCat('all')">ทั้งหมด${total!=null?' ('+total+')':''}</span>
+    ${VENDOR_STATE.categories.map(c=>`<span class="cat-chip ${cat===c.id?'active':''}" onclick="setDataCat('${c.id}')">${escapeHtml(c.name)}${counts[c.id]!=null?' ('+counts[c.id]+')':''}</span>`).join('')}
   `;
 }
 
 async function loadPublicCatalog(){
-  const snap = await db.collection('publicProducts').orderBy('submittedAt','desc').get().catch(()=>null);
-  VENDOR_STATE.catalog = snap ? snap.docs.map(d=>({id:d.id, ...d.data()})) : [];
-  drawVendorCatalog();
+  subscribeVendorCatalog();
+  refreshVendorCatalogCounts();
+}
+function subscribeVendorCatalog(){
+  let q = db.collection('publicProducts');
+  q = VENDOR_STATE.dataCat==='all'
+    ? q.orderBy('submittedAt','desc')
+    : q.where('categoryId','==',VENDOR_STATE.dataCat).orderBy('submittedAt','desc');
+  q = q.limit(VENDOR_STATE.catalogLimit);
+  setListener('vendorCatalog', q.onSnapshot(snap=>{
+    VENDOR_STATE.catalog = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    VENDOR_STATE.catalogHasMore = snap.size === VENDOR_STATE.catalogLimit;
+    drawVendorCatalog();
+  }, err=>{
+    console.error('catalog listener error', err);
+    toast('โหลดคลังสินค้าไม่สำเร็จ — ถ้าเพิ่งเลือกหมวดงาน อาจต้องรอสร้าง Index ใน Firestore ก่อน');
+  }));
+}
+function loadMoreVendorCatalog(){ VENDOR_STATE.catalogLimit += 25; subscribeVendorCatalog(); }
+async function refreshVendorCatalogCounts(){
+  VENDOR_STATE.catalogTotalCount = await countDocs(db.collection('publicProducts'));
+  const counts = {};
+  await Promise.all(VENDOR_STATE.categories.map(async c=>{ counts[c.id] = await countDocs(db.collection('publicProducts').where('categoryId','==',c.id)); }));
+  VENDOR_STATE.categoryProductCounts = counts;
+  const chipsEl = document.getElementById('dataCatalogChips');
+  if(chipsEl) chipsEl.innerHTML = dataCatChipsHtml();
 }
 function drawVendorCatalog(){
   const el = document.getElementById('catalogList');
   if(!el) return;
-  const chipsEl = document.getElementById('dataCatalogChips');
-  if(chipsEl) chipsEl.innerHTML = dataCatChipsHtml();
-  const cat = VENDOR_STATE.dataCat;
-  const list = VENDOR_STATE.catalog.filter(p=> cat==='all' || p.categoryId===cat);
-  el.innerHTML = list.length===0 ? '<div class="hint">📭 ยังไม่มีข้อมูลสินค้าในหมวดนี้</div>' :
+  const list = VENDOR_STATE.catalog;
+  el.innerHTML = (list.length===0 ? '<div class="hint">📭 ยังไม่มีข้อมูลสินค้าในหมวดนี้</div>' :
     list.map(p=>`
       <div class="prod-card">
         <div class="prod-top">
@@ -1126,12 +1225,13 @@ function drawVendorCatalog(){
         </div>
         <div class="quote-note">🏢 ชื่อบริษัท: ${escapeHtml(p.companyName)}</div>
         ${p.description?`<div class="quote-note">📝 รายละเอียด: ${escapeHtml(p.description)}</div>`:''}
-      </div>`).join('');
+      </div>`).join(''))
+    + (VENDOR_STATE.catalogHasMore ? `<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px;" onclick="loadMoreVendorCatalog()">⬇️ โหลดเพิ่ม</button>` : '');
 }
 
 async function loadMyProducts(){
   const companyQuery = (document.getElementById('searchCompany').value||'').trim();
-  const nameQuery = (document.getElementById('searchProductName').value||'').trim().toLowerCase();
+  const nameQuery = (document.getElementById('searchProductName').value||'').trim();
   if(!companyQuery && !nameQuery){
     toast('กรุณากรอกชื่อบริษัทหรือชื่อผลิตภัณฑ์อย่างน้อยหนึ่งช่อง');
     return;
@@ -1140,21 +1240,29 @@ async function loadMyProducts(){
   el.innerHTML = 'กำลังค้นหา…';
   let list = [];
   try{
-    const snap = await db.collection('products').get();
-    list = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    /* ค้นหาแบบ "ขึ้นต้นด้วย" ผ่าน field ตัวพิมพ์เล็ก (productNameLower/companyNameLower) ที่บันทึกไว้ตอนส่งข้อมูล
+       ทำให้ query ตรงจาก Firestore เลย ไม่ต้องโหลดทั้งคลังมากรองในเครื่องเหมือนเดิม —
+       หมายเหตุ: รายการเก่าที่ส่งไว้ก่อนอัปเดตนี้จะยังไม่มี field นี้ จะเจอเมื่อถูกแก้ไข/บันทึกซ้ำแล้วเท่านั้น */
+    let q = db.collection('products');
     if(companyQuery){
-      const cLower = companyQuery.toLowerCase();
-      list = list.filter(p=>(p.companyName||'').toLowerCase().includes(cLower));
+      const v = companyQuery.toLowerCase();
+      q = q.where('companyNameLower','>=',v).where('companyNameLower','<=',v+'\uf8ff').orderBy('companyNameLower');
+    } else {
+      const v = nameQuery.toLowerCase();
+      q = q.where('productNameLower','>=',v).where('productNameLower','<=',v+'\uf8ff').orderBy('productNameLower');
     }
-    if(nameQuery){
-      list = list.filter(p=>(p.productName||'').toLowerCase().includes(nameQuery));
+    const snap = await q.limit(30).get();
+    list = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    if(companyQuery && nameQuery){
+      const nv = nameQuery.toLowerCase();
+      list = list.filter(p=>(p.productNameLower || (p.productName||'').toLowerCase()).includes(nv));
     }
   }catch(e){
     el.innerHTML = 'เกิดข้อผิดพลาดในการค้นหา: ' + (e.message||e);
     return;
   }
   VENDOR_STATE.myProducts = list;
-  if(list.length===0){ el.innerHTML = 'ไม่พบรายการที่ตรงกับการค้นหา'; return; }
+  if(list.length===0){ el.innerHTML = 'ไม่พบรายการที่ตรงกับการค้นหา (ถ้าเป็นรายการที่ส่งไว้นานแล้ว ระบบค้นหาแบบใหม่จะยังไม่เจอจนกว่าจะถูกแก้ไข/บันทึกซ้ำ)'; return; }
   el.innerHTML = list.map(p=>`
     <div class="prod-card">
       <div class="prod-top"><span class="prod-name">${escapeHtml(p.productName)}</span></div>
@@ -1207,8 +1315,11 @@ async function submitProduct(){
     }
     VENDOR_STATE.companyName = companyName;
     VENDOR_STATE.companyPhone = companyPhone;
+    const productNameLower = productName.toLowerCase();
+    const companyNameLower = companyName.toLowerCase();
     const payload = {
       companyName, companyPhone, productName, categoryId, price: isNaN(priceVal)?null:priceVal, description, fileURL, fileName,
+      productNameLower, companyNameLower,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: isEdit
     };
     if(!isEdit) payload.submittedAt = firebase.firestore.FieldValue.serverTimestamp();
@@ -1216,6 +1327,7 @@ async function submitProduct(){
 
     await pubRef.set({
       companyName, companyPhone, productName, categoryId, description,
+      productNameLower, companyNameLower,
       fileURL: firebase.firestore.FieldValue.delete(), fileName: firebase.firestore.FieldValue.delete(),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(), isEdited: isEdit,
       submittedAt: payload.submittedAt || firebase.firestore.FieldValue.serverTimestamp()
@@ -1251,7 +1363,28 @@ async function submitProduct(){
    match /jobs/{id}       { allow read: if true; allow write: if request.auth != null; }
    match /categories/{id} { allow read: if true; allow write: if request.auth != null; }
 
-   (และต้องปิด TEST_MODE_NO_LOGIN เป็น false ก่อนใช้งานจริง)
+   (และต้องปิด TEST_MODE_NO_LOGIN เป็น false ก่อนใช้งานจริง มิฉะนั้นแอดมินเองก็จะยัง
+   ไม่มี request.auth และอ่าน quotes/products ไม่ได้เช่นกัน)
+
+   ⚠️ ข้อควรระวัง: กฎข้างบนนี้จะทำให้ฟีเจอร์ "ค้นหาสินค้าที่เคยส่ง" ฝั่งผู้เสนอราคา
+   (ซึ่งอ่านจาก collection "products" เพื่อดึงราคามาให้แก้ไข) ใช้งานไม่ได้ เพราะผู้เสนอราคา
+   ไม่ได้ล็อกอิน นี่คือข้อจำกัดที่มีอยู่แล้วในดีไซน์เดิม (ลิงก์เดียวใช้ร่วมกันทุกบริษัท ไม่มีระบบ
+   สมาชิก) ถ้าต้องการให้ผู้เสนอราคาแก้ไขราคาเดิมได้โดยไม่ต้องพิมพ์ใหม่ทุกครั้ง จะต้องยอมรับ
+   ความเสี่ยงนี้ (เปิด read ของ products ไว้แบบเดิม) หรือเปลี่ยนดีไซน์เป็นระบบสมาชิกจริง
+
+   ===================================================================
+   หมายเหตุประสิทธิภาพ/เรียลไทม์ (เพิ่มเข้ามาภายหลัง)
+   - รายการที่ "อาจเยอะ" (คลังสินค้า/ผลิตภัณฑ์) ตอนนี้โหลดทีละหน้า (25 รายการ) + ฟังสด
+     เฉพาะหน้าที่กำลังดู ไม่ดึงทั้ง collection มาทีเดียวอีกต่อไป
+   - ตัวเลขนับจำนวน (สถิติ/ตัวเลขบนชิปหมวดงาน) ใช้ Firestore count() aggregation
+     ซึ่งเร็วและไม่ต้องโหลดเอกสารจริงแม้ collection จะมีเป็นหมื่นรายการ
+   - เมื่อกรองตาม "หมวดงาน" (where categoryId + orderBy submittedAt) Firestore
+     ต้องการ Composite Index — ถ้าเจอ error ใน console ครั้งแรกที่ใช้ตัวกรองนี้ ให้กด
+     ลิงก์ "Create Index" ที่ Firestore แสดงไว้ใน error นั้นได้เลย (สร้างครั้งเดียวจบ)
+   - ค้นหาชื่อสินค้า/บริษัท ("ค้นหาสินค้าที่เคยส่ง") ใช้ field productNameLower /
+     companyNameLower ที่บันทึกไว้ตอนกดบันทึกสินค้า — รายการเก่าก่อนอัปเดตนี้จะยังไม่มี
+     field นี้ จึงค้นหาไม่เจอจนกว่าจะถูกแก้ไข/บันทึกซ้ำ (ให้แจ้งผู้เสนอราคาเข้าไปกดบันทึก
+     ซ้ำสักครั้ง หรือรันสคริปต์เติม field ย้อนหลังให้ก็ได้ถ้าต้องการ)
    =================================================================== */
 </script>
 </body>
