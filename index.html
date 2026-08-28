@@ -60,17 +60,19 @@
   .navlink .cnt + .arw{margin-left:6px;}
   .sidebar-foot{margin-top:auto;padding:12px 10px 4px;font-size:11px;color:var(--ink-dim);}
 
-  .navtree{display:flex;flex-direction:column;gap:2px;margin:2px 0 6px;}
-  .navsub{display:flex;align-items:center;gap:9px;padding:8px 12px 8px 30px;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink-soft);
-    cursor:pointer;transition:background .12s ease,color .12s ease;}
+  /* เส้นแนวตั้งเชื่อมจากหัวข้อใหญ่ลงมาแต่ละหัวข้อย่อย ให้เห็นโครงสร้างเมนูชัดเจนขึ้น */
+  .navtree{display:flex;flex-direction:column;gap:2px;margin:2px 0 6px 17px;padding-left:14px;border-left:2px solid var(--line-soft);}
+  .navsub{display:flex;align-items:center;gap:9px;padding:8px 12px 8px 6px;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink-soft);
+    cursor:pointer;transition:background .12s ease,color .12s ease;position:relative;}
   .navsub:hover{background:var(--bg-3);color:var(--ink);}
   .navsub.active{background:#f3eeff;color:var(--safety-deep);}
   .navsub .cnt{margin-left:auto;font-family:'JetBrains Mono';font-size:10px;color:var(--ink-dim);}
   .navsub .arw{margin-left:auto;font-size:9px;color:var(--ink-dim);transition:transform .15s ease;flex:none;}
   .navsub .cnt + .arw{margin-left:6px;}
   .navsub .arw.open{transform:rotate(90deg);}
-  .navsubsub{display:block;padding:7px 12px 7px 46px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--ink-dim);
-    cursor:pointer;transition:background .12s ease,color .12s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .navsubsub{display:block;padding:7px 12px 7px 22px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--ink-dim);
+    cursor:pointer;transition:background .12s ease,color .12s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    margin-left:8px;border-left:2px solid var(--line-soft);}
   .navsubsub:hover{background:var(--bg-3);color:var(--ink);}
   .navsubsub.active{background:#f3eeff;color:var(--safety-deep);}
 
@@ -166,6 +168,14 @@
   .spec-row .fields .full{grid-column:1/-1;}
   .spec-row input,.spec-row select{background:#fff;}
   .spec-row .rm{flex:none;}
+
+  .vcat-group{border:1px solid var(--line);border-left-width:4px;border-radius:14px;margin-bottom:14px;overflow:hidden;transition:background .15s ease;}
+  .vcat-header{display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;font-weight:800;font-size:14.5px;user-select:none;}
+  .vcat-header:hover{filter:brightness(.97);}
+  .vcat-meta{margin-left:auto;font-family:'JetBrains Mono';font-size:11.5px;color:var(--ink-dim);font-weight:600;}
+  .vcat-arrow{flex:none;font-size:12px;color:var(--ink-dim);transition:transform .15s ease;}
+  .vcat-arrow.open{transform:rotate(90deg);}
+  .vcat-body{padding:0 16px 16px;}
 
   .item-bid-input-group{border:2px solid var(--line);border-radius:14px;padding:0;margin-bottom:16px;background:var(--bg-3);transition:border-color .15s ease, box-shadow .15s ease;overflow:hidden;}
   .item-bid-input-group:hover{border-color:var(--gold);box-shadow:0 4px 14px -8px rgba(15,35,64,.18);}
@@ -566,7 +576,7 @@ function drawSidebarNav(){
   nav.innerHTML = `
     <div class="navlink ${ADMIN_STATE.tab==='bid'?'active':''}" onclick="toggleNavBid()"><span class="ico">📋</span>ประมูลราคาโครงการ<span class="cnt">${ADMIN_STATE.jobs.length}</span><span class="arw ${ADMIN_STATE.navBidOpen?'open':''}">▸</span></div>
     ${bidTreeHtml}
-    <div class="navlink ${ADMIN_STATE.tab==='data'?'active':''}" onclick="toggleNavData()"><span class="ico">📦</span>คลังข้อมูลสินค้า<span class="cnt">${ADMIN_STATE.products.length}</span><span class="arw ${ADMIN_STATE.navDataOpen?'open':''}">▸</span></div>
+    <div class="navlink ${ADMIN_STATE.tab==='data'?'active':''}" onclick="toggleNavData()"><span class="ico">📦</span>คลังข้อมูลสินค้า<span class="arw ${ADMIN_STATE.navDataOpen?'open':''}">▸</span></div>
     ${dataTreeHtml}
   `;
 }
@@ -931,7 +941,7 @@ async function deleteProduct(id){
    เห็นเฉพาะแอดมินเท่านั้น
 ========================================================= */
 let VENDOR_STATE = { tab:'bid', companyName:'', companyPhone:'', categories:[], jobs:[], activeJobId:null, activeJob:null,
-  publicBids:[], existingBid:null, editingProductId:null, myProducts:[], dataCat:'all', catalog:[], expandedItems:new Set(),
+  publicBids:[], existingBid:null, editingProductId:null, myProducts:[], dataCat:'all', catalog:[], expandedItems:new Set(), expandedCats:new Set(),
   catalogLimit:25, catalogHasMore:false, catalogTotalCount:null, categoryProductCounts:{} };
 
 async function renderVendorPortal(){
@@ -948,6 +958,19 @@ async function renderVendorPortal(){
   }, err=>console.error('vendor jobs listener error', err)));
 }
 function vCatName(id){ const c = VENDOR_STATE.categories.find(c=>c.id===id); return c ? c.name : 'ไม่ระบุหมวดงาน'; }
+
+/* สีประจำแต่ละหมวดงาน ใช้แยกกล่องของแต่ละหมวดให้อ่านง่ายในหน้ารายละเอียดโครงการ (ฝั่งผู้เสนอราคา) */
+const VCAT_STYLES = [
+  {border:'#5b3fd9', bg:'#f5f2ff'},
+  {border:'#b5730f', bg:'#fdf6ec'},
+  {border:'#2568c9', bg:'#eef5ff'},
+  {border:'#2f7a4f', bg:'#eef8f1'},
+  {border:'#a8710a', bg:'#fbf4e6'},
+  {border:'#d1483a', bg:'#fdefed'},
+  {border:'#0f9b8e', bg:'#eafaf8'},
+  {border:'#c2185b', bg:'#fdeef3'}
+];
+function vcatStyle(idx){ return VCAT_STYLES[idx % VCAT_STYLES.length]; }
 
 function drawVendorSidebarNav(){
   const nav = document.getElementById('sidebarNav');
@@ -1052,6 +1075,7 @@ function vendorJobListHtml(){
 function openVendorJob(jobId){
   VENDOR_STATE.activeJobId = jobId;
   VENDOR_STATE.expandedItems = new Set();
+  VENDOR_STATE.expandedCats = new Set();
   drawVendorContent();
 }
 function backToJobList(){ clearListener('vendorPublicBids'); VENDOR_STATE.activeJobId = null; drawVendorContent(); }
@@ -1163,6 +1187,13 @@ function toggleItemExpand(itemId){
   if(willShow) VENDOR_STATE.expandedItems.add(itemId); else VENDOR_STATE.expandedItems.delete(itemId);
 }
 
+/* เปิด/ปิดกลุ่มทั้งหมวดงาน (ย่อไว้ก่อนเป็นค่าเริ่มต้น คลิกหัวข้อหมวดงานเพื่อกางดูรายการภายใน) */
+function toggleVendorCat(catId){
+  if(VENDOR_STATE.expandedCats.has(catId)) VENDOR_STATE.expandedCats.delete(catId);
+  else VENDOR_STATE.expandedCats.add(catId);
+  drawVendorJobDetailBody();
+}
+
 function vendorJobDetailHtml(){
   return `<div id="vendorJobDetailBody"><div class="empty">กำลังโหลดรายละเอียดโครงการ…</div></div>`;
 }
@@ -1186,10 +1217,21 @@ function drawVendorJobDetailBody(){
     </div>
     <div class="card">
       <span class="eyebrow">เสนอผลิตภัณฑ์และราคาต่อรายการสเปค</span>
-      <p class="hint" style="margin-top:0;">คลิกที่แต่ละรายการเพื่อเปิดรายละเอียดและกรอกราคา — แต่ละรายการเป็นใบเสนอราคาแยกกัน กรอกและกดส่งทีละรายการได้เลย ไม่จำเป็นต้องเสนอครบทุกรายการ</p>
-      ${catIds.map(cid=>`
-        <div class="spec-group-title">${escapeHtml(vCatName(cid))}</div>
-        ${items.filter(i=>i.categoryId===cid).map(it=>{
+      <p class="hint" style="margin-top:0;">คลิกหมวดงานเพื่อดูรายการภายใน แล้วคลิกแต่ละรายการเพื่อเปิดรายละเอียดและกรอกราคา — แต่ละรายการเป็นใบเสนอราคาแยกกัน กรอกและกดส่งทีละรายการได้เลย ไม่จำเป็นต้องเสนอครบทุกรายการ</p>
+      ${catIds.map((cid,idx)=>{
+        const catItems = items.filter(i=>i.categoryId===cid);
+        const st = vcatStyle(idx);
+        const isCatOpen = VENDOR_STATE.expandedCats.has(cid);
+        const doneCount = catItems.filter(it=> existing && existing.bids && existing.bids[it.id]).length;
+        return `
+        <div class="vcat-group" style="border-left-color:${st.border};background:${isCatOpen?st.bg:'#fff'};">
+          <div class="vcat-header" onclick="toggleVendorCat('${cid}')" style="color:${st.border};">
+            <span>${escapeHtml(vCatName(cid))}</span>
+            <span class="vcat-meta">${catItems.length} รายการ${doneCount?' · เสนอแล้ว '+doneCount:''}</span>
+            <span class="vcat-arrow ${isCatOpen?'open':''}">▸</span>
+          </div>
+          <div class="vcat-body" style="display:${isCatOpen?'block':'none'};">
+          ${catItems.map(it=>{
           const prev = existing && existing.bids && existing.bids[it.id];
           const isExpanded = VENDOR_STATE.expandedItems.has(it.id);
           const unitLabel = it.unit ? escapeHtml(it.unit) : 'หน่วย';
@@ -1233,7 +1275,9 @@ function drawVendorJobDetailBody(){
             </div>
           </div>`;
         }).join('')}
-      `).join('') || '<div class="hint">โครงการนี้ยังไม่มีรายการสเปค</div>'}
+          </div>
+        </div>`;
+      }).join('') || '<div class="hint">โครงการนี้ยังไม่มีรายการสเปค</div>'}
     </div>`;
 }
 
