@@ -54,7 +54,25 @@
   .navlink.active{background:linear-gradient(120deg,#efe9ff,#f3eeff);color:var(--safety-deep);}
   .navlink .cnt{margin-left:auto;font-family:'JetBrains Mono';font-size:10.5px;color:var(--ink-dim);}
   .navlink.active .cnt{color:var(--safety-deep);}
+  .navlink .arw{margin-left:auto;font-size:10px;color:var(--ink-dim);transition:transform .15s ease;flex:none;}
+  .navlink.active .arw{color:var(--safety-deep);}
+  .navlink .arw.open{transform:rotate(90deg);}
+  .navlink .cnt + .arw{margin-left:6px;}
   .sidebar-foot{margin-top:auto;padding:12px 10px 4px;font-size:11px;color:var(--ink-dim);}
+
+  .navtree{display:flex;flex-direction:column;gap:2px;margin:2px 0 6px;}
+  .navsub{display:flex;align-items:center;gap:9px;padding:8px 12px 8px 30px;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink-soft);
+    cursor:pointer;transition:background .12s ease,color .12s ease;}
+  .navsub:hover{background:var(--bg-3);color:var(--ink);}
+  .navsub.active{background:#f3eeff;color:var(--safety-deep);}
+  .navsub .cnt{margin-left:auto;font-family:'JetBrains Mono';font-size:10px;color:var(--ink-dim);}
+  .navsub .arw{margin-left:auto;font-size:9px;color:var(--ink-dim);transition:transform .15s ease;flex:none;}
+  .navsub .cnt + .arw{margin-left:6px;}
+  .navsub .arw.open{transform:rotate(90deg);}
+  .navsubsub{display:block;padding:7px 12px 7px 46px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--ink-dim);
+    cursor:pointer;transition:background .12s ease,color .12s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .navsubsub:hover{background:var(--bg-3);color:var(--ink);}
+  .navsubsub.active{background:#f3eeff;color:var(--safety-deep);}
 
   .main{flex:1;min-width:0;}
   .mainTop{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;position:sticky;top:0;z-index:30;
@@ -397,7 +415,8 @@ function doLogin(){
    ADMIN: STATE + DASHBOARD SHELL
 ========================================================= */
 let ADMIN_STATE = { tab:'bid', categories:[], jobs:[], products:[], activeCat:'all', jobStatusFilter:'active', productFilter:'', productCat:'all',
-  productsLimit:25, productsHasMore:false, productsTotalCount:null, categoryProductCounts:{} };
+  productsLimit:25, productsHasMore:false, productsTotalCount:null, categoryProductCounts:{},
+  selectedJobId:null, navBidOpen:false, navBidGroupOpen:null, navDataOpen:false };
 
 function renderAdmin(user){
   topbarActions.innerHTML = TEST_MODE_NO_LOGIN ? `
@@ -455,6 +474,7 @@ async function refreshAdminProductCounts(){
   await Promise.all(ADMIN_STATE.categories.map(async c=>{ counts[c.id] = await countDocs(db.collection('products').where('categoryId','==',c.id)); }));
   ADMIN_STATE.categoryProductCounts = counts;
   const sg = document.querySelector('.stat-grid'); if(sg) sg.outerHTML = statCardsHtml();
+  drawSidebarNav();
   if(ADMIN_STATE.tab==='data') drawAdminTabContent();
 }
 
@@ -464,12 +484,90 @@ async function seedCategories(){
   await batch.commit();
 }
 
+/* =========================================================
+   ADMIN SIDEBAR — expandable tree navigation
+   ระดับ 1: ประมูลราคาโครงการ / คลังข้อมูลสินค้า
+   ระดับ 2 (ประมูลราคาโครงการ): เปิดรับ / ปิดรับแล้ว
+   ระดับ 3: รายชื่อโครงการ (คลิกเพื่อดูเฉพาะโครงการนั้น)
+   ระดับ 2 (คลังข้อมูลสินค้า): รายชื่อหมวดงาน พร้อมจำนวน
+========================================================= */
+function toggleNavBid(){
+  if(ADMIN_STATE.tab!=='bid'){ ADMIN_STATE.tab='bid'; ADMIN_STATE.navBidOpen = true; }
+  else { ADMIN_STATE.navBidOpen = !ADMIN_STATE.navBidOpen; }
+  ADMIN_STATE.selectedJobId = null;
+  mainTitle.innerHTML = 'ประมูลราคาโครงการ <span class="badge badge-role admin" id="roleBadge">🛡️ แอดมิน</span>';
+  drawSidebarNav();
+  drawAdminTabContent();
+}
+function toggleNavBidGroup(status){
+  ADMIN_STATE.tab='bid'; ADMIN_STATE.navBidOpen = true;
+  ADMIN_STATE.navBidGroupOpen = (ADMIN_STATE.navBidGroupOpen===status) ? null : status;
+  ADMIN_STATE.jobStatusFilter = status;
+  ADMIN_STATE.selectedJobId = null;
+  mainTitle.innerHTML = 'ประมูลราคาโครงการ <span class="badge badge-role admin" id="roleBadge">🛡️ แอดมิน</span>';
+  drawSidebarNav();
+  drawAdminTabContent();
+}
+function selectNavJob(jobId, status){
+  ADMIN_STATE.tab='bid'; ADMIN_STATE.navBidOpen = true; ADMIN_STATE.navBidGroupOpen = status;
+  ADMIN_STATE.jobStatusFilter = status; ADMIN_STATE.selectedJobId = jobId;
+  mainTitle.innerHTML = 'ประมูลราคาโครงการ <span class="badge badge-role admin" id="roleBadge">🛡️ แอดมิน</span>';
+  drawSidebarNav();
+  drawAdminTabContent();
+}
+function clearSelectedNavJob(){
+  ADMIN_STATE.selectedJobId = null;
+  drawAdminTabContent();
+}
+function toggleNavData(){
+  if(ADMIN_STATE.tab!=='data'){ ADMIN_STATE.tab='data'; ADMIN_STATE.navDataOpen = true; }
+  else { ADMIN_STATE.navDataOpen = !ADMIN_STATE.navDataOpen; }
+  mainTitle.innerHTML = 'คลังข้อมูลสินค้า <span class="badge badge-role admin" id="roleBadge">🛡️ แอดมิน</span>';
+  drawSidebarNav();
+  drawAdminTabContent();
+}
+function selectNavDataCat(catId){
+  ADMIN_STATE.tab='data'; ADMIN_STATE.navDataOpen = true;
+  setProductCat(catId);
+  mainTitle.innerHTML = 'คลังข้อมูลสินค้า <span class="badge badge-role admin" id="roleBadge">🛡️ แอดมิน</span>';
+  drawSidebarNav();
+}
+
 function drawSidebarNav(){
   const nav = document.getElementById('sidebarNav');
   if(!nav) return;
+  const jobHasCat = (j,catId) => (j.items||[]).some(it=>it.categoryId===catId);
+  const catJobs = ADMIN_STATE.jobs.filter(j => ADMIN_STATE.activeCat==='all' || jobHasCat(j, ADMIN_STATE.activeCat));
+  const activeJobs = catJobs.filter(j=>j.status!=='closed');
+  const closedJobs = catJobs.filter(j=>j.status==='closed');
+
+  let bidTreeHtml = '';
+  if(ADMIN_STATE.navBidOpen){
+    bidTreeHtml = `<div class="navtree">
+      <div class="navsub ${ADMIN_STATE.navBidGroupOpen==='active'?'active':''}" onclick="event.stopPropagation();toggleNavBidGroup('active')">🟢 เปิดรับ<span class="cnt">${activeJobs.length}</span><span class="arw ${ADMIN_STATE.navBidGroupOpen==='active'?'open':''}">▸</span></div>
+      ${ADMIN_STATE.navBidGroupOpen==='active' ? (activeJobs.length ? activeJobs.map(j=>`<div class="navsubsub ${ADMIN_STATE.selectedJobId===j.id?'active':''}" onclick="event.stopPropagation();selectNavJob('${j.id}','active')" title="${escapeHtml(j.title)}">${escapeHtml(j.title)}</div>`).join('') : '<div class="navsubsub" style="cursor:default;color:var(--ink-dim);">ไม่มีโครงการ</div>') : ''}
+      <div class="navsub ${ADMIN_STATE.navBidGroupOpen==='closed'?'active':''}" onclick="event.stopPropagation();toggleNavBidGroup('closed')">⚪ ปิดรับแล้ว<span class="cnt">${closedJobs.length}</span><span class="arw ${ADMIN_STATE.navBidGroupOpen==='closed'?'open':''}">▸</span></div>
+      ${ADMIN_STATE.navBidGroupOpen==='closed' ? (closedJobs.length ? closedJobs.map(j=>`<div class="navsubsub ${ADMIN_STATE.selectedJobId===j.id?'active':''}" onclick="event.stopPropagation();selectNavJob('${j.id}','closed')" title="${escapeHtml(j.title)}">${escapeHtml(j.title)}</div>`).join('') : '<div class="navsubsub" style="cursor:default;color:var(--ink-dim);">ไม่มีโครงการ</div>') : ''}
+    </div>`;
+  }
+
+  let dataTreeHtml = '';
+  if(ADMIN_STATE.navDataOpen){
+    const totalLabel = ADMIN_STATE.productsTotalCount!=null ? ADMIN_STATE.productsTotalCount : ADMIN_STATE.products.length;
+    dataTreeHtml = `<div class="navtree">
+      <div class="navsub ${ADMIN_STATE.productCat==='all'?'active':''}" onclick="event.stopPropagation();selectNavDataCat('all')">ทั้งหมด<span class="cnt">${totalLabel}</span></div>
+      ${ADMIN_STATE.categories.map(c=>{
+        const count = ADMIN_STATE.categoryProductCounts[c.id];
+        return `<div class="navsub ${ADMIN_STATE.productCat===c.id?'active':''}" onclick="event.stopPropagation();selectNavDataCat('${c.id}')" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}<span class="cnt">${count!=null?count:'…'}</span></div>`;
+      }).join('')}
+    </div>`;
+  }
+
   nav.innerHTML = `
-    <div class="navlink ${ADMIN_STATE.tab==='bid'?'active':''}" onclick="setAdminTab('bid')"><span class="ico">📋</span>ประมูลราคาโครงการ<span class="cnt">${ADMIN_STATE.jobs.length}</span></div>
-    <div class="navlink ${ADMIN_STATE.tab==='data'?'active':''}" onclick="setAdminTab('data')"><span class="ico">📦</span>คลังข้อมูลสินค้า<span class="cnt">${ADMIN_STATE.products.length}</span></div>
+    <div class="navlink ${ADMIN_STATE.tab==='bid'?'active':''}" onclick="toggleNavBid()"><span class="ico">📋</span>ประมูลราคาโครงการ<span class="cnt">${ADMIN_STATE.jobs.length}</span><span class="arw ${ADMIN_STATE.navBidOpen?'open':''}">▸</span></div>
+    ${bidTreeHtml}
+    <div class="navlink ${ADMIN_STATE.tab==='data'?'active':''}" onclick="toggleNavData()"><span class="ico">📦</span>คลังข้อมูลสินค้า<span class="cnt">${ADMIN_STATE.products.length}</span><span class="arw ${ADMIN_STATE.navDataOpen?'open':''}">▸</span></div>
+    ${dataTreeHtml}
   `;
 }
 function statCardsHtml(){
@@ -500,7 +598,7 @@ function drawAdminShell(){
   `;
   drawAdminTabContent();
 }
-function setAdminTab(t){ ADMIN_STATE.tab = t; drawSidebarNav(); mainTitle.innerHTML = (t==='bid' ? 'ประมูลราคาโครงการ' : 'คลังข้อมูลสินค้า') + ' <span class="badge badge-role admin" id="roleBadge">🛡️ แอดมิน</span>'; drawAdminTabContent(); }
+function setAdminTab(t){ ADMIN_STATE.tab = t; ADMIN_STATE.selectedJobId = null; drawSidebarNav(); mainTitle.innerHTML = (t==='bid' ? 'ประมูลราคาโครงการ' : 'คลังข้อมูลสินค้า') + ' <span class="badge badge-role admin" id="roleBadge">🛡️ แอดมิน</span>'; drawAdminTabContent(); }
 function copyLink(url){ navigator.clipboard.writeText(url).then(()=>toast('📋 คัดลอกลิงก์ผู้เสนอราคาแล้ว')); }
 
 function drawAdminTabContent(){
@@ -515,8 +613,22 @@ function adminBidTabHtml(){
   const jobHasCat = (j,catId) => (j.items||[]).some(it=>it.categoryId===catId);
   const catJobs = ADMIN_STATE.jobs.filter(j => activeCat==='all' || jobHasCat(j, activeCat));
   const statusFilter = ADMIN_STATE.jobStatusFilter;
-  const activeCount = catJobs.filter(j=>j.status!=='closed').length;
-  const closedCount = catJobs.filter(j=>j.status==='closed').length;
+
+  if(ADMIN_STATE.selectedJobId){
+    const j = ADMIN_STATE.jobs.find(j=>j.id===ADMIN_STATE.selectedJobId);
+    if(!j){
+      return `<div class="card"><div class="empty">ไม่พบโครงการนี้ (อาจถูกลบไปแล้ว)</div><button class="btn btn-ghost btn-sm" onclick="clearSelectedNavJob()">← กลับไปยังรายการทั้งหมด</button></div>`;
+    }
+    return `
+      <div class="card">
+        <button class="btn btn-ghost btn-sm" onclick="clearSelectedNavJob()">← กลับไปยังรายการโครงการทั้งหมด</button>
+      </div>
+      <div class="card">
+        <span class="eyebrow">รายการโครงการ</span>
+        <div id="jobList">${renderJobRow(j)}</div>
+      </div>`;
+  }
+
   const jobs = catJobs.filter(j => statusFilter==='closed' ? j.status==='closed' : j.status!=='closed');
   return `
     <div class="card">
@@ -532,20 +644,17 @@ function adminBidTabHtml(){
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-        <span class="eyebrow" style="margin:0;">รายการโครงการ</span>
+        <span class="eyebrow" style="margin:0;">รายการโครงการ${statusFilter==='closed'?' — ปิดรับแล้ว':' — เปิดรับอยู่'}</span>
         <button class="btn btn-primary btn-sm" onclick="openJobModal()">➕ สร้างโครงการใหม่</button>
       </div>
-      <div class="tabbar" style="max-width:360px;margin-top:14px;">
-        <div class="tabbtn ${statusFilter==='active'?'active':''}" onclick="setJobStatusFilter('active')"><span class="ico">🟢</span>เปิดรับ<span class="cnt">(${activeCount})</span></div>
-        <div class="tabbtn ${statusFilter==='closed'?'active':''}" onclick="setJobStatusFilter('closed')"><span class="ico">⚪</span>ปิดรับแล้ว<span class="cnt">(${closedCount})</span></div>
-      </div>
+      <p class="hint" style="margin-top:0;">ใช้เมนู “ประมูลราคาโครงการ” ในแถบด้านข้างเพื่อสลับดู เปิดรับ/ปิดรับแล้ว หรือเลือกดูเฉพาะโครงการ</p>
       <div id="jobList">
         ${jobs.length===0 ? `<div class="empty"><div class="disp">📭 ${statusFilter==='closed'?'ยังไม่มีโครงการที่ปิดรับในหมวดนี้':'ยังไม่มีโครงการเปิดรับในหมวดนี้'}</div>${statusFilter==='active'?'กด “สร้างโครงการใหม่” แล้วกำหนดรายการสเปคที่ต้องการเปิดประมูล':''}</div>` :
           jobs.map(j=>renderJobRow(j)).join('')}
       </div>
     </div>`;
 }
-function setCat(id){ ADMIN_STATE.activeCat = id; drawAdminTabContent(); }
+function setCat(id){ ADMIN_STATE.activeCat = id; drawSidebarNav(); drawAdminTabContent(); }
 function setJobStatusFilter(f){ ADMIN_STATE.jobStatusFilter = f; drawAdminTabContent(); }
 function catName(id){ const c = ADMIN_STATE.categories.find(c=>c.id===id); return c ? c.name : 'ไม่ระบุหมวดงาน'; }
 
@@ -571,6 +680,7 @@ function renderJobRow(j){
 async function toggleJobStatus(jobId, newStatus){
   await db.collection('jobs').doc(jobId).update({status:newStatus});
   const j = ADMIN_STATE.jobs.find(j=>j.id===jobId); if(j) j.status = newStatus;
+  drawSidebarNav();
   drawAdminTabContent();
 }
 async function deleteJob(jobId){
@@ -583,6 +693,8 @@ async function deleteJob(jobId){
   batch.delete(db.collection('jobs').doc(jobId));
   await batch.commit();
   ADMIN_STATE.jobs = ADMIN_STATE.jobs.filter(j=>j.id!==jobId);
+  if(ADMIN_STATE.selectedJobId===jobId) ADMIN_STATE.selectedJobId = null;
+  drawSidebarNav();
   drawAdminTabContent();
   toast('🗑️ ลบโครงการแล้ว');
 }
@@ -658,6 +770,13 @@ function openJobModal(jobId){
   const editing = !!jobId;
   const job = editing ? ADMIN_STATE.jobs.find(j=>j.id===jobId) : null;
   SPEC_DRAFT = editing ? JSON.parse(JSON.stringify(job.items||[])) : [];
+  /* รายการเก่าที่เคยสร้างไว้ก่อนมีระบบหมวดงาน (หรือค่า categoryId อ้างอิงหมวดที่ถูกลบไปแล้ว) จะไม่มี/ไม่ตรงกับ
+     หมวดงานที่มีอยู่จริง ทำให้ dropdown แสดงตัวเลือกแรกให้ดู "เหมือน" เลือกไว้ทั้งที่ยังไม่ได้บันทึกค่านั้นจริง ๆ
+     (ผู้เสนอราคาจะเห็นเป็น "ไม่ระบุหมวดงาน") — จึงต้องเซ็ตค่าจริงให้ตรงกับตัวเลือกที่แสดงเสมอ ก่อนที่แอดมินจะกดบันทึก */
+  if(ADMIN_STATE.categories.length){
+    const validIds = new Set(ADMIN_STATE.categories.map(c=>c.id));
+    SPEC_DRAFT.forEach(s=>{ if(!s.categoryId || !validIds.has(s.categoryId)) s.categoryId = ADMIN_STATE.categories[0].id; });
+  }
   if(ADMIN_STATE.categories.length===0){ toast('กรุณาเพิ่มหมวดงานก่อนสร้างโครงการ'); return; }
   const bg = document.createElement('div');
   bg.className = 'modal-bg';
@@ -756,6 +875,7 @@ function adminDataTabHtml(){
   return `
     <div class="card">
       <span class="eyebrow">หมวดงาน</span>
+      <p class="hint" style="margin-top:0;">ใช้เมนู “คลังข้อมูลสินค้า” ในแถบด้านข้างเพื่อดูจำนวนสินค้าต่อหมวดงานแบบแผนผัง หรือเลือกหมวดงานด้านล่างนี้ก็ได้เช่นกัน</p>
       <div>
         <span class="cat-chip ${cat==='all'?'active':''}" onclick="setProductCat('all')">ทั้งหมด (${totalLabel})</span>
         ${cats.map(c=>{
@@ -792,6 +912,7 @@ function setProductCat(id){
   ADMIN_STATE.productCat = id;
   ADMIN_STATE.productsLimit = 25;
   subscribeAdminProducts();
+  drawSidebarNav();
   drawAdminTabContent();
 }
 async function deleteProduct(id){
