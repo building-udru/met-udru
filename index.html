@@ -149,11 +149,15 @@
   .spec-row input,.spec-row select{background:#fff;}
   .spec-row .rm{flex:none;}
 
-  .item-bid-input-group{border:2px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px;background:var(--bg-3);transition:border-color .15s ease, box-shadow .15s ease;}
+  .item-bid-input-group{border:2px solid var(--line);border-radius:14px;padding:0;margin-bottom:16px;background:var(--bg-3);transition:border-color .15s ease, box-shadow .15s ease;overflow:hidden;}
   .item-bid-input-group:hover{border-color:var(--gold);box-shadow:0 4px 14px -8px rgba(15,35,64,.18);}
   .item-bid-input-group.is-filled{border-color:var(--ok);background:var(--ok-bg);}
+  .item-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 20px;cursor:pointer;user-select:none;}
+  .item-header:hover{background:rgba(255,255,255,.5);}
+  .item-header .arrow{flex:none;font-size:13px;color:var(--ink-dim);width:22px;height:22px;border-radius:8px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;transition:transform .15s ease;}
+  .item-body{padding:0 20px 20px;}
   .item-bid-input-group .item-title{font-weight:800;font-size:19px;margin-bottom:4px;color:var(--ink);}
-  .item-bid-input-group .item-detail{font-size:14px;color:var(--ink-soft);margin-bottom:12px;}
+  .item-bid-input-group .item-detail{font-size:14px;color:var(--ink-soft);margin-bottom:0;}
   .item-bid-input-group label{font-size:14.5px;}
   .item-bid-input-group input{font-size:16px;padding:13px 14px;}
   .item-bid-input-group input,.item-bid-input-group textarea,.item-bid-input-group select{background:#fff;}
@@ -161,6 +165,7 @@
   .item-offers{margin:8px 0 14px;padding:10px 12px;background:#fff;border:1px dashed var(--line);border-radius:10px;font-size:13.5px;color:var(--ink-soft);}
   .item-offers b{color:var(--ink);}
   .item-submit-msg{font-size:13px;margin-top:8px;min-height:16px;}
+  .spec-image{width:100%;max-width:260px;border-radius:12px;border:1px solid var(--line);margin:10px 0 14px;display:block;}
 
   .bid-card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;transition:box-shadow .12s ease,border-color .12s ease;}
   .bid-card:hover{box-shadow:0 4px 14px -8px rgba(15,35,64,.16);border-color:var(--ink-dim);}
@@ -391,7 +396,7 @@ function doLogin(){
 /* =========================================================
    ADMIN: STATE + DASHBOARD SHELL
 ========================================================= */
-let ADMIN_STATE = { tab:'bid', categories:[], jobs:[], products:[], activeCat:'all', productFilter:'', productCat:'all',
+let ADMIN_STATE = { tab:'bid', categories:[], jobs:[], products:[], activeCat:'all', jobStatusFilter:'active', productFilter:'', productCat:'all',
   productsLimit:25, productsHasMore:false, productsTotalCount:null, categoryProductCounts:{} };
 
 function renderAdmin(user){
@@ -508,7 +513,11 @@ function adminBidTabHtml(){
   const cats = ADMIN_STATE.categories;
   const activeCat = ADMIN_STATE.activeCat;
   const jobHasCat = (j,catId) => (j.items||[]).some(it=>it.categoryId===catId);
-  const jobs = ADMIN_STATE.jobs.filter(j => activeCat==='all' || jobHasCat(j, activeCat));
+  const catJobs = ADMIN_STATE.jobs.filter(j => activeCat==='all' || jobHasCat(j, activeCat));
+  const statusFilter = ADMIN_STATE.jobStatusFilter;
+  const activeCount = catJobs.filter(j=>j.status!=='closed').length;
+  const closedCount = catJobs.filter(j=>j.status==='closed').length;
+  const jobs = catJobs.filter(j => statusFilter==='closed' ? j.status==='closed' : j.status!=='closed');
   return `
     <div class="card">
       <span class="eyebrow">หมวดงาน</span>
@@ -522,17 +531,22 @@ function adminBidTabHtml(){
       </div>
     </div>
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
         <span class="eyebrow" style="margin:0;">รายการโครงการ</span>
         <button class="btn btn-primary btn-sm" onclick="openJobModal()">➕ สร้างโครงการใหม่</button>
       </div>
+      <div class="tabbar" style="max-width:360px;margin-top:14px;">
+        <div class="tabbtn ${statusFilter==='active'?'active':''}" onclick="setJobStatusFilter('active')"><span class="ico">🟢</span>เปิดรับ<span class="cnt">(${activeCount})</span></div>
+        <div class="tabbtn ${statusFilter==='closed'?'active':''}" onclick="setJobStatusFilter('closed')"><span class="ico">⚪</span>ปิดรับแล้ว<span class="cnt">(${closedCount})</span></div>
+      </div>
       <div id="jobList">
-        ${jobs.length===0 ? `<div class="empty"><div class="disp">📭 ยังไม่มีโครงการในหมวดนี้</div>กด “สร้างโครงการใหม่” แล้วกำหนดรายการสเปคที่ต้องการเปิดประมูล</div>` :
+        ${jobs.length===0 ? `<div class="empty"><div class="disp">📭 ${statusFilter==='closed'?'ยังไม่มีโครงการที่ปิดรับในหมวดนี้':'ยังไม่มีโครงการเปิดรับในหมวดนี้'}</div>${statusFilter==='active'?'กด “สร้างโครงการใหม่” แล้วกำหนดรายการสเปคที่ต้องการเปิดประมูล':''}</div>` :
           jobs.map(j=>renderJobRow(j)).join('')}
       </div>
     </div>`;
 }
 function setCat(id){ ADMIN_STATE.activeCat = id; drawAdminTabContent(); }
+function setJobStatusFilter(f){ ADMIN_STATE.jobStatusFilter = f; drawAdminTabContent(); }
 function catName(id){ const c = ADMIN_STATE.categories.find(c=>c.id===id); return c ? c.name : 'ไม่ระบุหมวดงาน'; }
 
 function renderJobRow(j){
@@ -611,14 +625,16 @@ function renderQuotesPanel(el, items, bidsDocs){
           const pc = typeof c.bid.price==='number' ? c.bid.price : Infinity;
           return pa - pc;
         });
+        const unitSuffix = it.unit ? (' / ' + escapeHtml(it.unit)) : '';
         return `<div class="bid-card">
           <div class="item-title" style="font-size:16px;margin-bottom:2px;">${escapeHtml(it.name)}</div>
-          <div class="item-detail" style="margin-bottom:10px;">${[it.spec, it.unit?('หน่วย: '+it.unit):'', it.qty?('จำนวน: '+it.qty):''].filter(Boolean).join(' · ')||'-'}</div>
+          <div class="item-detail" style="margin-bottom:10px;">${[it.spec, it.unit?('หน่วย: '+it.unit):''].filter(Boolean).join(' · ')||'-'}</div>
+          ${it.imageURL?`<img class="spec-image" src="${it.imageURL}" alt="รูปอ้างอิง">`:''}
           ${offers.map(({b,bid})=>{
             const isLowest = bid.price === min;
             return `<div class="bid-item-row ${isLowest?'lowest':''}">
               <span class="lp">${escapeHtml(b.companyName)} ${b.isEdited?'<span class="badge badge-edited">✏️ แก้ไขแล้ว</span>':''}${bid.product?' · เสนอ: '+escapeHtml(bid.product):''}</span>
-              <span class="rp">${bid.price!=null?fmtBaht(bid.price):'-'}${isLowest?' <span class="badge badge-lowest">🏆 ต่ำสุด</span>':''}</span>
+              <span class="rp">${bid.price!=null?(fmtBaht(bid.price)+unitSuffix):'-'}${isLowest?' <span class="badge badge-lowest">🏆 ต่ำสุด</span>':''}</span>
             </div>
             ${bid.note?`<div class="quote-note" style="margin:2px 0 6px;">รายละเอียด: ${escapeHtml(bid.note)}</div>`:''}
             ${bid.fileURL?`<div class="quote-file" style="margin-bottom:4px;">📎 <a href="${bid.fileURL}" target="_blank" rel="noopener">${escapeHtml(bid.fileName||'เอกสารแนบ')}</a></div>`:''}
@@ -652,7 +668,7 @@ function openJobModal(jobId){
       <label>รายละเอียด (ไม่บังคับ)</label><textarea id="newJobDesc" placeholder="ขอบเขตงาน เงื่อนไข ฯลฯ">${editing?escapeHtml(job.description||''):''}</textarea>
       <label>กำหนดส่งราคาภายใน (ไม่บังคับ)</label><input id="newJobDeadline" placeholder="เช่น 30 ก.ย. 2569" value="${editing?escapeHtml(job.deadline||''):''}">
       <label style="margin-bottom:2px;">รายการสเปคของโครงการ</label>
-      <div class="hint" style="margin-top:0;margin-bottom:8px;">แต่ละรายการเลือก “หมวดงาน” เช่น พื้น แล้วตั้งชื่อรายการ เช่น “กระเบื้อง 60×60” — ผู้เสนอราคาจะเสนอผลิตภัณฑ์และราคาตามสเปคที่ตั้งไว้นี้</div>
+      <div class="hint" style="margin-top:0;margin-bottom:8px;">แต่ละรายการเลือก “หมวดงาน” เช่น พื้น แล้วตั้งชื่อรายการ เช่น “กระเบื้อง 60×60” — สามารถแนบรูปอ้างอิงให้ผู้เสนอราคาดูประกอบได้ — ผู้เสนอราคาจะเสนอผลิตภัณฑ์และราคาตามสเปคที่ตั้งไว้นี้</div>
       <div id="specRows"></div>
       <button class="btn btn-ghost btn-sm" type="button" onclick="addSpecRow()">➕ เพิ่มรายการสเปค</button>
       <div style="display:flex;gap:10px;margin-top:20px;">
@@ -663,9 +679,28 @@ function openJobModal(jobId){
   document.body.appendChild(bg);
   drawSpecRows();
 }
-function addSpecRow(){ SPEC_DRAFT.push({id: uid(), categoryId: ADMIN_STATE.categories[0].id, name:'', spec:'', unit:'', qty:''}); drawSpecRows(); }
+function addSpecRow(){ SPEC_DRAFT.push({id: uid(), categoryId: ADMIN_STATE.categories[0].id, name:'', spec:'', unit:'', imageURL:null, imageName:null}); drawSpecRows(); }
 function removeSpecRow(id){ SPEC_DRAFT = SPEC_DRAFT.filter(s=>s.id!==id); drawSpecRows(); }
 function updateSpecField(id, field, val){ const s = SPEC_DRAFT.find(s=>s.id===id); if(s) s[field]=val; }
+async function uploadSpecImage(specId, file){
+  if(!file) return;
+  const wrap = document.getElementById('specimgwrap_'+specId);
+  if(wrap) wrap.innerHTML = '<span class="hint" style="margin:0;">กำลังอัปโหลดรูป…</span>';
+  try{
+    const uploaded = await uploadToCloudinary(file, 'jobspecs');
+    const s = SPEC_DRAFT.find(s=>s.id===specId);
+    if(s){ s.imageURL = uploaded.url; s.imageName = uploaded.name; }
+    drawSpecRows();
+  }catch(e){
+    toast('อัปโหลดรูปไม่สำเร็จ: ' + (e.message||e));
+    drawSpecRows();
+  }
+}
+function removeSpecImage(specId){
+  const s = SPEC_DRAFT.find(s=>s.id===specId);
+  if(s){ s.imageURL = null; s.imageName = null; }
+  drawSpecRows();
+}
 function drawSpecRows(){
   const el = document.getElementById('specRows');
   if(!el) return;
@@ -678,7 +713,15 @@ function drawSpecRows(){
           <input placeholder="รายการ เช่น กระเบื้อง 60×60" value="${escapeHtml(s.name)}" oninput="updateSpecField('${s.id}','name',this.value)">
           <input class="full" placeholder="สเปค/รายละเอียด เช่น เกรด A สีเทา กันลื่น" value="${escapeHtml(s.spec)}" oninput="updateSpecField('${s.id}','spec',this.value)">
           <input placeholder="หน่วย เช่น ตร.ม." value="${escapeHtml(s.unit)}" oninput="updateSpecField('${s.id}','unit',this.value)">
-          <input placeholder="จำนวน" value="${escapeHtml(s.qty)}" oninput="updateSpecField('${s.id}','qty',this.value)">
+          <div class="full" id="specimgwrap_${s.id}">
+            ${s.imageURL ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <img src="${s.imageURL}" style="width:46px;height:46px;object-fit:cover;border-radius:8px;border:1px solid var(--line);">
+                <a href="${s.imageURL}" target="_blank" rel="noopener" style="font-size:12.5px;">${escapeHtml(s.imageName||'ดูรูปอ้างอิง')}</a>
+                <button class="btn btn-ghost btn-sm" type="button" onclick="removeSpecImage('${s.id}')">🗑️ ลบรูป</button>
+              </div>`
+              : `<input type="file" accept="image/*" onchange="uploadSpecImage('${s.id}', this.files[0])">
+                 <div class="hint" style="margin-top:4px;">📷 แนบรูปอ้างอิงให้ผู้เสนอราคาดู (ไม่บังคับ)</div>`}
+          </div>
         </div>
         <button class="btn btn-danger btn-sm rm" type="button" onclick="removeSpecRow('${s.id}')">🗑️</button>
       </div>`).join('');
@@ -767,7 +810,7 @@ async function deleteProduct(id){
    เห็นเฉพาะแอดมินเท่านั้น
 ========================================================= */
 let VENDOR_STATE = { tab:'bid', companyName:'', companyPhone:'', categories:[], jobs:[], activeJobId:null, activeJob:null,
-  publicBids:[], existingBid:null, editingProductId:null, myProducts:[], dataCat:'all', catalog:[],
+  publicBids:[], existingBid:null, editingProductId:null, myProducts:[], dataCat:'all', catalog:[], expandedItems:new Set(),
   catalogLimit:25, catalogHasMore:false, catalogTotalCount:null, categoryProductCounts:{} };
 
 async function renderVendorPortal(){
@@ -887,6 +930,7 @@ function vendorJobListHtml(){
 }
 function openVendorJob(jobId){
   VENDOR_STATE.activeJobId = jobId;
+  VENDOR_STATE.expandedItems = new Set();
   drawVendorContent();
 }
 function backToJobList(){ clearListener('vendorPublicBids'); VENDOR_STATE.activeJobId = null; drawVendorContent(); }
@@ -987,6 +1031,17 @@ function toggleOffers(itemId){
   if(btn) btn.textContent = btn.textContent.replace(willShow ? 'ดูข้อมูล' : 'ซ่อนข้อมูล', willShow ? 'ซ่อนข้อมูล' : 'ดูข้อมูล');
 }
 
+/* เปิด/ปิดรายละเอียด+ฟอร์มกรอกของแต่ละรายการสเปค (พับ/กางแบบ accordion) */
+function toggleItemExpand(itemId){
+  const body = document.getElementById('itembody_'+itemId);
+  const arrow = document.getElementById('itemarrow_'+itemId);
+  if(!body) return;
+  const willShow = body.style.display === 'none';
+  body.style.display = willShow ? 'block' : 'none';
+  if(arrow) arrow.textContent = willShow ? '▲' : '▼';
+  if(willShow) VENDOR_STATE.expandedItems.add(itemId); else VENDOR_STATE.expandedItems.delete(itemId);
+}
+
 function vendorJobDetailHtml(){
   return `<div id="vendorJobDetailBody"><div class="empty">กำลังโหลดรายละเอียดโครงการ…</div></div>`;
 }
@@ -1010,25 +1065,34 @@ function drawVendorJobDetailBody(){
     </div>
     <div class="card">
       <span class="eyebrow">เสนอผลิตภัณฑ์และราคาต่อรายการสเปค</span>
-      <p class="hint" style="margin-top:0;">แต่ละรายการเป็นใบเสนอราคาแยกกัน กรอกและกดส่งทีละรายการได้เลย ไม่จำเป็นต้องเสนอครบทุกรายการ</p>
+      <p class="hint" style="margin-top:0;">คลิกที่แต่ละรายการเพื่อเปิดรายละเอียดและกรอกราคา — แต่ละรายการเป็นใบเสนอราคาแยกกัน กรอกและกดส่งทีละรายการได้เลย ไม่จำเป็นต้องเสนอครบทุกรายการ</p>
       ${catIds.map(cid=>`
         <div class="spec-group-title">${escapeHtml(vCatName(cid))}</div>
         ${items.filter(i=>i.categoryId===cid).map(it=>{
           const prev = existing && existing.bids && existing.bids[it.id];
+          const isExpanded = VENDOR_STATE.expandedItems.has(it.id);
+          const unitLabel = it.unit ? escapeHtml(it.unit) : 'หน่วย';
           const offerRows = pub.filter(b=>b.bids && b.bids[it.id]).map(b=>{
             const ob = b.bids[it.id];
             return `<div class="bid-item-row">
               <span class="lp"><b>${escapeHtml(b.companyName)}</b>${b.isEdited?' <span class="badge badge-edited">✏️ แก้ไขแล้ว</span>':''}${ob.product?' · เสนอ: '+escapeHtml(ob.product):''}</span>
-              <span class="rp">${ob.priceMask?ob.priceMask+' บาท':'-'}</span>
+              <span class="rp">${ob.priceMask?ob.priceMask+' บาท/'+unitLabel:'-'}</span>
             </div>
             ${ob.note?`<div class="quote-note" style="margin:2px 0 6px;">รายละเอียด: ${escapeHtml(ob.note)}</div>`:''}
             ${ob.hasFile?`<div class="quote-file" style="margin-bottom:6px;color:var(--ink-dim);">📎 มีไฟล์แนบ (แอดมินเห็นเท่านั้น)</div>`:''}`;
           });
           return `
           <div class="item-bid-input-group ${prev?'is-filled':''}" id="itemcard_${it.id}">
-            <div class="item-title">${escapeHtml(it.name)}</div>
-            <div class="item-detail">${[it.spec, it.unit?('หน่วย: '+it.unit):'', it.qty?('จำนวน: '+it.qty):''].filter(Boolean).join(' · ')||'-'}</div>
-            ${offerRows.length ? `<button class="btn btn-ghost btn-sm" type="button" style="margin-bottom:14px;" onclick="toggleOffers('${it.id}')" id="offersbtn_${it.id}">👀 ดูข้อมูลที่ผู้เสนอราคาอื่นเสนอ (${offerRows.length})</button>` : '<div class="hint" style="margin-bottom:14px;">ยังไม่มีผู้เสนอราคาเสนอรายการนี้</div>'}
+            <div class="item-header" onclick="toggleItemExpand('${it.id}')">
+              <div>
+                <div class="item-title">${escapeHtml(it.name)}${prev?' <span class="badge badge-edited" style="vertical-align:middle;">✅ เสนอแล้ว</span>':''}</div>
+                <div class="item-detail">${[it.spec, it.unit?('หน่วย: '+it.unit):''].filter(Boolean).join(' · ')||'-'}</div>
+              </div>
+              <span class="arrow" id="itemarrow_${it.id}">${isExpanded?'▲':'▼'}</span>
+            </div>
+            <div class="item-body" id="itembody_${it.id}" style="display:${isExpanded?'block':'none'};">
+            ${it.imageURL?`<img class="spec-image" src="${it.imageURL}" alt="รูปอ้างอิง">`:''}
+            ${offerRows.length ? `<button class="btn btn-ghost btn-sm" type="button" style="margin:10px 0 14px;" onclick="toggleOffers('${it.id}')" id="offersbtn_${it.id}">👀 ดูข้อมูลที่ผู้เสนอราคาอื่นเสนอ (${offerRows.length})</button>` : '<div class="hint" style="margin:10px 0 14px;">ยังไม่มีผู้เสนอราคาเสนอรายการนี้</div>'}
             <div class="item-offers" id="offerspanel_${it.id}" style="display:none;">${offerRows.join('')}</div>
             <div class="row">
               <div><label style="margin-top:0;">ชื่อบริษัทของผู้เสนอราคา</label><input id="bidcompany_${it.id}" placeholder="บริษัท ตัวอย่าง จำกัด" value="${escapeHtml(VENDOR_STATE.companyName||'')}" oninput="syncCompanyField(this.value,'name')"></div>
@@ -1036,7 +1100,7 @@ function drawVendorJobDetailBody(){
             </div>
             <div class="row">
               <div><label style="margin-top:0;">ผลิตภัณฑ์/ยี่ห้อที่เสนอ</label><input id="bidprod_${it.id}" placeholder="เช่น กระเบื้อง Cotto รุ่น..." value="${prev?escapeHtml(prev.product||''):''}"></div>
-              <div><label style="margin-top:0;">ราคา (บาท) — แอดมินเห็นเท่านั้น</label><input id="bidprice_${it.id}" type="number" min="0" step="0.01" placeholder="0.00" value="${prev&&prev.price!=null?prev.price:''}"></div>
+              <div><label style="margin-top:0;">ราคา/หน่วย (บาท ต่อ ${unitLabel}) — แอดมินเห็นเท่านั้น</label><input id="bidprice_${it.id}" type="number" min="0" step="0.01" placeholder="0.00" value="${prev&&prev.price!=null?prev.price:''}"></div>
             </div>
             <label>รายละเอียดเพิ่มเติม (ไม่บังคับ)</label>
             <textarea id="biditemnote_${it.id}" placeholder="เงื่อนไข ระยะเวลาส่งมอบ ฯลฯ">${prev?escapeHtml(prev.note||''):''}</textarea>
@@ -1045,6 +1109,7 @@ function drawVendorJobDetailBody(){
             ${prev&&prev.fileURL?`<div class="quote-file">มีไฟล์เดิมอยู่แล้ว (แนบไฟล์ใหม่เพื่อแทนที่): <a href="${prev.fileURL}" target="_blank" rel="noopener">${escapeHtml(prev.fileName||'ไฟล์')}</a></div>`:''}
             <button class="btn btn-primary btn-item-submit" id="itembtn_${it.id}" onclick="submitItemBid('${VENDOR_STATE.activeJobId}','${it.id}')">${prev?'✏️ แก้ไข/ส่งราคารายการนี้อีกครั้ง':'📤 ส่งใบเสนอราคารายการนี้'}</button>
             <div class="item-submit-msg" id="itemmsg_${it.id}"></div>
+            </div>
           </div>`;
         }).join('')}
       `).join('') || '<div class="hint">โครงการนี้ยังไม่มีรายการสเปค</div>'}
