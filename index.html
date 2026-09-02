@@ -178,11 +178,11 @@
   .vcat-body{padding:0 16px 16px;}
 
   /* ===== Admin: collapsible bid item (แต่ละรายการสเปคในหน้าดูราคาที่เสนอ) ===== */
-  .abid-item{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden;background:#fff;transition:border-color .12s ease, box-shadow .12s ease;}
-  .abid-item:hover{border-color:var(--ink-dim);box-shadow:0 4px 14px -8px rgba(15,35,64,.16);}
+  .abid-item{border:1px solid var(--line);border-left-width:5px;border-left-color:var(--safety);border-radius:12px;margin-bottom:10px;overflow:hidden;background:#fff;transition:border-color .12s ease, box-shadow .12s ease;}
+  .abid-item:hover{box-shadow:0 4px 14px -8px rgba(15,35,64,.16);}
   .abid-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none;}
   .abid-header:hover{background:var(--bg-3);}
-  .abid-header .at-title{font-weight:800;font-size:15.5px;color:var(--ink);font-family:'Anuphan';}
+  .abid-header .at-title{font-weight:800;font-size:17px;letter-spacing:-.01em;color:var(--safety-deep);font-family:'Anuphan';}
   .abid-header .at-meta{font-size:12.5px;color:var(--ink-soft);margin-top:3px;font-family:'Anuphan';}
   .abid-header .at-arrow{flex:none;font-size:13px;color:var(--ink-dim);width:22px;height:22px;border-radius:8px;background:var(--bg-3);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;transition:transform .15s ease;}
   .abid-header .at-arrow.open{transform:rotate(90deg);}
@@ -754,8 +754,8 @@ function renderQuotesPanel(el, jobId, items, bidsDocs){
   const catIds = [...new Set(items.map(i=>i.categoryId))];
   el.innerHTML = `<div class="card" style="margin-top:8px;">
     <span class="eyebrow">ใบเสนอราคาทั้งหมด (${bidsDocs.length} ผู้เสนอราคา) — จัดกลุ่มตามรายการสเปค เพื่อเทียบราคาสินค้าชนิดเดียวกัน · เห็นราคาได้เฉพาะแอดมิน · ไฮไลต์เขียว = ราคาต่ำสุดของรายการนั้น · คลิกแต่ละรายการเพื่อดูรายละเอียด · อัปเดตสดอัตโนมัติ</span>
-    ${catIds.map(cid=>`
-      <div class="spec-group-title">${escapeHtml(catName(cid))}</div>
+    ${catIds.map((cid,catIdx)=>{ const st = vcatStyle(catIdx); return `
+      <div class="spec-group-title" style="color:${st.border};">${escapeHtml(catName(cid))}</div>
       ${items.filter(it=>it.categoryId===cid).map(it=>{
         const offers = bidsDocs.filter(b=>(b.bids||{})[it.id]).map(b=>({b, bid:b.bids[it.id]}));
         if(offers.length===0) return '';
@@ -770,10 +770,10 @@ function renderQuotesPanel(el, jobId, items, bidsDocs){
         const key = jobId+'_'+it.id;
         const metaBits = [it.spec, it.unit?('หน่วย: '+it.unit):''].filter(Boolean).join(' · ') || '-';
         const metaLine = metaBits + ' · ' + offers.length + ' ผู้เสนอราคา' + (min!==Infinity ? ' · ต่ำสุด ' + fmtBaht(min) + unitSuffix : '');
-        return `<div class="abid-item">
+        return `<div class="abid-item" style="border-left-color:${st.border};">
           <div class="abid-header" onclick="toggleAdminBidItem('${key}')">
             <div>
-              <div class="at-title">${escapeHtml(it.name)}</div>
+              <div class="at-title" style="color:${st.border};">${escapeHtml(it.name)}</div>
               <div class="at-meta">${metaLine}</div>
             </div>
             <span class="at-arrow" id="abidarrow_${key}">▸</span>
@@ -793,7 +793,7 @@ function renderQuotesPanel(el, jobId, items, bidsDocs){
           </div>
         </div>`;
       }).join('') || '<div class="hint">ยังไม่มีผู้เสนอราคาในหมวดนี้</div>'}
-    `).join('')}
+    `;}).join('')}
   </div>`;
 }
 
