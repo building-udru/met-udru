@@ -113,7 +113,7 @@
   .btn-item-submit{width:100%;justify-content:center;display:flex;align-items:center;gap:6px;margin-top:12px;}
 
   .card{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:16px;box-shadow:var(--shadow);transition:box-shadow .15s ease, border-color .15s ease;}
-  .eyebrow{font-family:'JetBrains Mono';font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--safety-deep);font-weight:600;margin-bottom:8px;display:block;}
+  .eyebrow{font-family:'Anuphan';font-size:12px;letter-spacing:.2px;color:var(--safety-deep);font-weight:700;margin-bottom:8px;display:block;}
   label{display:block;font-size:13.5px;font-weight:600;color:var(--ink-soft);margin:14px 0 6px;}
   label:first-child{margin-top:0;}
   input,textarea,select{width:100%;font-family:'Anuphan';font-size:15px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--bg-3);color:var(--ink);transition:border-color .12s ease, box-shadow .12s ease, background .12s ease;}
@@ -126,7 +126,7 @@
   .row{display:flex;gap:12px;}
   .row>*{flex:1;}
 
-  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:20px;font-family:'JetBrains Mono';}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:20px;font-family:'Anuphan';}
   .badge-open{background:var(--ok-bg);color:var(--ok);}
   .badge-closed{background:#f1f2ee;color:var(--ink-dim);}
   .badge-edited{background:var(--warn-bg);color:var(--warn);}
@@ -160,7 +160,7 @@
   .job-meta{font-size:12.5px;color:var(--ink-soft);margin-top:4px;}
   .job-actions{display:flex;gap:8px;flex:none;flex-wrap:wrap;justify-content:flex-end;}
 
-  .spec-group-title{font-weight:700;font-size:13.5px;color:var(--safety-deep);margin:16px 0 6px;font-family:'JetBrains Mono';letter-spacing:.3px;}
+  .spec-group-title{font-weight:700;font-size:13.5px;color:var(--safety-deep);margin:16px 0 6px;font-family:'Anuphan';letter-spacing:.1px;}
   .spec-group-title:first-child{margin-top:0;}
 
   .spec-row{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--bg-3);}
@@ -172,10 +172,21 @@
   .vcat-group{border:1px solid var(--line);border-left-width:4px;border-radius:14px;margin-bottom:14px;overflow:hidden;transition:background .15s ease;}
   .vcat-header{display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;font-weight:800;font-size:14.5px;user-select:none;}
   .vcat-header:hover{filter:brightness(.97);}
-  .vcat-meta{margin-left:auto;font-family:'JetBrains Mono';font-size:11.5px;color:var(--ink-dim);font-weight:600;}
+  .vcat-meta{margin-left:auto;font-family:'Anuphan';font-size:11.5px;color:var(--ink-dim);font-weight:600;}
   .vcat-arrow{flex:none;font-size:12px;color:var(--ink-dim);transition:transform .15s ease;}
   .vcat-arrow.open{transform:rotate(90deg);}
   .vcat-body{padding:0 16px 16px;}
+
+  /* ===== Admin: collapsible bid item (แต่ละรายการสเปคในหน้าดูราคาที่เสนอ) ===== */
+  .abid-item{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden;background:#fff;transition:border-color .12s ease, box-shadow .12s ease;}
+  .abid-item:hover{border-color:var(--ink-dim);box-shadow:0 4px 14px -8px rgba(15,35,64,.16);}
+  .abid-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none;}
+  .abid-header:hover{background:var(--bg-3);}
+  .abid-header .at-title{font-weight:800;font-size:15.5px;color:var(--ink);font-family:'Anuphan';}
+  .abid-header .at-meta{font-size:12.5px;color:var(--ink-soft);margin-top:3px;font-family:'Anuphan';}
+  .abid-header .at-arrow{flex:none;font-size:13px;color:var(--ink-dim);width:22px;height:22px;border-radius:8px;background:var(--bg-3);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;transition:transform .15s ease;}
+  .abid-header .at-arrow.open{transform:rotate(90deg);}
+  .abid-body{padding:0 16px 16px;display:none;}
 
   .item-bid-input-group{border:2px solid var(--line);border-radius:14px;padding:0;margin-bottom:16px;background:var(--bg-3);transition:border-color .15s ease, box-shadow .15s ease;overflow:hidden;}
   .item-bid-input-group:hover{border-color:var(--gold);box-shadow:0 4px 14px -8px rgba(15,35,64,.18);}
@@ -724,17 +735,25 @@ function toggleQuotes(jobId){
   const items = job.items || [];
   setListener('quotes-'+jobId, db.collection('quotes').where('jobId','==',jobId).onSnapshot(snap=>{
     const bidsDocs = snap.docs.map(d=>({id:d.id, ...d.data()}));
-    renderQuotesPanel(el, items, bidsDocs);
+    renderQuotesPanel(el, jobId, items, bidsDocs);
   }, err=>{ console.error('quotes listener error', err); el.innerHTML = `<div class="empty" style="padding:16px;">โหลดใบเสนอราคาไม่สำเร็จ</div>`; }));
 }
-function renderQuotesPanel(el, items, bidsDocs){
+function toggleAdminBidItem(key){
+  const body = document.getElementById('abidbody_'+key);
+  const arrow = document.getElementById('abidarrow_'+key);
+  if(!body) return;
+  const willShow = body.style.display === 'none' || body.style.display === '';
+  body.style.display = willShow ? 'block' : 'none';
+  if(arrow) arrow.classList.toggle('open', willShow);
+}
+function renderQuotesPanel(el, jobId, items, bidsDocs){
   if(bidsDocs.length===0){
     el.innerHTML = `<div class="empty" style="padding:16px;">ยังไม่มีผู้เสนอราคาเข้ามา</div>`;
     return;
   }
   const catIds = [...new Set(items.map(i=>i.categoryId))];
   el.innerHTML = `<div class="card" style="margin-top:8px;">
-    <span class="eyebrow">ใบเสนอราคาทั้งหมด (${bidsDocs.length} ผู้เสนอราคา) — จัดกลุ่มตามรายการสเปค เพื่อเทียบราคาสินค้าชนิดเดียวกัน · เห็นราคาได้เฉพาะแอดมิน · ไฮไลต์เขียว = ราคาต่ำสุดของรายการนั้น · อัปเดตสดอัตโนมัติ</span>
+    <span class="eyebrow">ใบเสนอราคาทั้งหมด (${bidsDocs.length} ผู้เสนอราคา) — จัดกลุ่มตามรายการสเปค เพื่อเทียบราคาสินค้าชนิดเดียวกัน · เห็นราคาได้เฉพาะแอดมิน · ไฮไลต์เขียว = ราคาต่ำสุดของรายการนั้น · คลิกแต่ละรายการเพื่อดูรายละเอียด · อัปเดตสดอัตโนมัติ</span>
     ${catIds.map(cid=>`
       <div class="spec-group-title">${escapeHtml(catName(cid))}</div>
       ${items.filter(it=>it.categoryId===cid).map(it=>{
@@ -748,20 +767,30 @@ function renderQuotesPanel(el, items, bidsDocs){
           return pa - pc;
         });
         const unitSuffix = it.unit ? (' / ' + escapeHtml(it.unit)) : '';
-        return `<div class="bid-card">
-          <div class="item-title" style="font-size:16px;margin-bottom:2px;">${escapeHtml(it.name)}</div>
-          <div class="item-detail" style="margin-bottom:10px;">${[it.spec, it.unit?('หน่วย: '+it.unit):''].filter(Boolean).join(' · ')||'-'}</div>
-          ${it.imageURL?`<img class="spec-image" src="${it.imageURL}" alt="รูปอ้างอิง">`:''}
-          ${offers.map(({b,bid})=>{
-            const isLowest = bid.price === min;
-            return `<div class="bid-item-row ${isLowest?'lowest':''}">
-              <span class="lp">${escapeHtml(b.companyName)} ${b.isEdited?'<span class="badge badge-edited">✏️ แก้ไขแล้ว</span>':''}${bid.product?' · เสนอ: '+escapeHtml(bid.product):''}</span>
-              <span class="rp">${bid.price!=null?(fmtBaht(bid.price)+unitSuffix):'-'}${isLowest?' <span class="badge badge-lowest">🏆 ต่ำสุด</span>':''}</span>
+        const key = jobId+'_'+it.id;
+        const metaBits = [it.spec, it.unit?('หน่วย: '+it.unit):''].filter(Boolean).join(' · ') || '-';
+        const metaLine = metaBits + ' · ' + offers.length + ' ผู้เสนอราคา' + (min!==Infinity ? ' · ต่ำสุด ' + fmtBaht(min) + unitSuffix : '');
+        return `<div class="abid-item">
+          <div class="abid-header" onclick="toggleAdminBidItem('${key}')">
+            <div>
+              <div class="at-title">${escapeHtml(it.name)}</div>
+              <div class="at-meta">${metaLine}</div>
             </div>
-            ${bid.note?`<div class="quote-note" style="margin:2px 0 6px;">รายละเอียด: ${escapeHtml(bid.note)}</div>`:''}
-            ${bid.fileURL?`<div class="quote-file" style="margin-bottom:4px;">📎 <a href="${bid.fileURL}" target="_blank" rel="noopener">${escapeHtml(bid.fileName||'เอกสารแนบ')}</a></div>`:''}
-            <div class="hint" style="margin:0 0 10px;">โทร ${escapeHtml(b.companyPhone)} · ส่งล่าสุด ${fmtDate(b.updatedAt||b.submittedAt)}</div>`;
-          }).join('')}
+            <span class="at-arrow" id="abidarrow_${key}">▸</span>
+          </div>
+          <div class="abid-body" id="abidbody_${key}">
+            ${it.imageURL?`<img class="spec-image" src="${it.imageURL}" alt="รูปอ้างอิง">`:''}
+            ${offers.map(({b,bid})=>{
+              const isLowest = bid.price === min;
+              return `<div class="bid-item-row ${isLowest?'lowest':''}">
+                <span class="lp">${escapeHtml(b.companyName)} ${b.isEdited?'<span class="badge badge-edited">✏️ แก้ไขแล้ว</span>':''}${bid.product?' · เสนอ: '+escapeHtml(bid.product):''}</span>
+                <span class="rp">${bid.price!=null?(fmtBaht(bid.price)+unitSuffix):'-'}${isLowest?' <span class="badge badge-lowest">🏆 ต่ำสุด</span>':''}</span>
+              </div>
+              ${bid.note?`<div class="quote-note" style="margin:2px 0 6px;">รายละเอียด: ${escapeHtml(bid.note)}</div>`:''}
+              ${bid.fileURL?`<div class="quote-file" style="margin-bottom:4px;">📎 <a href="${bid.fileURL}" target="_blank" rel="noopener">${escapeHtml(bid.fileName||'เอกสารแนบ')}</a></div>`:''}
+              <div class="hint" style="margin:0 0 10px;">โทร ${escapeHtml(b.companyPhone)} · ส่งล่าสุด ${fmtDate(b.updatedAt||b.submittedAt)}</div>`;
+            }).join('')}
+          </div>
         </div>`;
       }).join('') || '<div class="hint">ยังไม่มีผู้เสนอราคาในหมวดนี้</div>'}
     `).join('')}
