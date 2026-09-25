@@ -823,7 +823,7 @@ function openJobModal(jobId){
     <div class="modal">
       <h3 class="disp" style="margin-top:0;">${editing?'✏️ แก้ไขโครงการ':'📋 สร้างโครงการใหม่'}</h3>
       <label>ชื่อโครงการ</label><input id="newJobTitle" placeholder="เช่น ปรับปรุงอาคารเรียนรวม 1" value="${editing?escapeHtml(job.title):''}">
-      <label>รายละเอียด (ไม่บังคับ)</label><textarea id="newJobDesc" placeholder="ขอบเขตงาน เงื่อนไข ฯลฯ">${editing?escapeHtml(job.description||''):''}</textarea>
+      <label>รายละเอียดพัสดุ </label><textarea id="newJobDesc" placeholder="ขอบเขตงาน เงื่อนไข ฯลฯ">${editing?escapeHtml(job.description||''):''}</textarea>
       <label>กำหนดส่งราคาภายใน (ไม่บังคับ)</label><input id="newJobDeadline" placeholder="เช่น 30 ก.ย. 2569" value="${editing?escapeHtml(job.deadline||''):''}">
       <label style="margin-bottom:2px;">รายการสเปคของโครงการ</label>
       <div class="hint" style="margin-top:0;margin-bottom:8px;">แต่ละรายการเลือก “หมวดงาน” เช่น พื้น แล้วตั้งชื่อรายการ เช่น “กระเบื้อง 60×60” — สามารถแนบรูปอ้างอิงให้ผู้เสนอราคาดูประกอบได้ — ผู้เสนอราคาจะเสนอผลิตภัณฑ์และราคาตามสเปคที่ตั้งไว้นี้</div>
