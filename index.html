@@ -1294,7 +1294,7 @@ function drawVendorJobDetailBody(){
               <div><label style="margin-top:0;">ผลิตภัณฑ์/ยี่ห้อที่เสนอ</label><input id="bidprod_${it.id}" placeholder="เช่น กระเบื้อง Cotto รุ่น..." value="${prev?escapeHtml(prev.product||''):''}"></div>
               <div><label style="margin-top:0;">ราคา/หน่วย (บาท ต่อ ${unitLabel}) — แอดมินเห็นเท่านั้น</label><input id="bidprice_${it.id}" type="number" min="0" step="0.01" placeholder="0.00" value="${prev&&prev.price!=null?prev.price:''}"></div>
             </div>
-            <label>รายละเอียดเพิ่มเติม (ไม่บังคับ)</label>
+            <label>รายละเอียดพัสดุ</label>
             <textarea id="biditemnote_${it.id}" placeholder="เงื่อนไข ระยะเวลาส่งมอบ ฯลฯ">${prev?escapeHtml(prev.note||''):''}</textarea>
             <label>แนบไฟล์ใบเสนอราคา (แอดมินเห็นเท่านั้น)</label>
             <input id="biditemfile_${it.id}" type="file" accept=".pdf,image/*">
