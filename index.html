@@ -401,15 +401,11 @@ if(isVendor){
   sidebarEl.style.display = 'flex';
   mainTitle.textContent = 'ภาพรวม';
   topbarSub.textContent = 'หลังบ้านผู้ดูแล';
-  auth.onAuthStateChanged(user=>{
+    auth.onAuthStateChanged(user=>{
     READ_ONLY = !user;
     document.getElementById('sidebarFoot').textContent = user ? 'โหมดผู้ดูแลระบบ' : 'โหมดดูอย่างเดียว';
     renderAdmin(user || {email:null});
-  } else if(TEST_MODE_NO_LOGIN){
-    renderAdmin({email:'ผู้ดูแลระบบ'});
-  } else {
-    auth.onAuthStateChanged(user=>{ if(user){ renderAdmin(user); } else { renderLogin(); } });
-  }
+  });
 }
 
 /* =========================================================
@@ -657,6 +653,26 @@ function adminBidTabHtml(){
   }
 
   const jobs = catJobs.filter(j => statusFilter==='closed' ? j.status==='closed' : j.status!=='closed');
+    let catSection = '';
+  if(activeCat!=='all'){
+    const catRows = catJobs.map(j=>{
+      const its = (j.items||[]).filter(it=>it.categoryId===activeCat);
+      if(!its.length) return '';
+      const isOpen = j.status!=='closed';
+      return `<div class="bid-card">
+        <div class="bid-card-top">
+          <div class="job-title" style="font-size:14.5px;">📁 ${escapeHtml(j.title)} <span class="badge ${isOpen?'badge-open':'badge-closed'}">${isOpen?'🟢 เปิดรับ':'⚪ ปิดรับแล้ว'}</span></div>
+          <button class="btn btn-sm" onclick="toggleCatQuotes('${j.id}','${activeCat}')">💰 ดูราคาที่เสนอ</button>
+        </div>
+        ${its.map(it=>`<div class="bid-item-row"><span class="lp">${escapeHtml(it.name)}${it.spec?' · '+escapeHtml(it.spec):''}</span><span class="hint" style="margin:0;">${it.unit?'หน่วย: '+escapeHtml(it.unit):''}</span></div>`).join('')}
+        <div id="catquotes-${j.id}"></div>
+      </div>`;
+    }).join('');
+    catSection = `<div class="card">
+      <span class="eyebrow">รายการสเปคหมวด “${escapeHtml(catName(activeCat))}” จากทุกโครงการ (ทั้งเปิดรับและปิดรับแล้ว)</span>
+      ${catRows || '<div class="hint">ยังไม่มีรายการสเปคในหมวดนี้</div>'}
+    </div>`;
+  }
   return `
     <div class="card">
       <span class="eyebrow">หมวดงาน</span>
@@ -677,11 +693,35 @@ function adminBidTabHtml(){
       <p class="hint" style="margin-top:0;">ใช้เมนู “ประมูลราคาโครงการ” ในแถบด้านข้างเพื่อสลับดู เปิดรับ/ปิดรับแล้ว หรือเลือกดูเฉพาะโครงการ</p>
       <div id="jobList">
         ${jobs.length===0 ? `<div class="empty"><div class="disp">📭 ${statusFilter==='closed'?'ยังไม่มีโครงการที่ปิดรับในหมวดนี้':'ยังไม่มีโครงการเปิดรับในหมวดนี้'}</div>${statusFilter==='active'?'กด “สร้างโครงการใหม่” แล้วกำหนดรายการสเปคที่ต้องการเปิดประมูล':''}</div>` :
-          jobs.map(j=>renderJobRow(j)).join('')}
+                    jobs.map(j=>renderJobRow(j)).join('')}
       </div>
-    </div>`;
+    </div>
+    ${catSection}`;
 }
-function setCat(id){ ADMIN_STATE.activeCat = id; drawSidebarNav(); drawAdminTabContent(); }
+let openCatQuotePanels = new Set();
+function setCat(id){
+  openCatQuotePanels.forEach(jid=>clearListener('catquotes-'+jid));
+  openCatQuotePanels.clear();
+  ADMIN_STATE.activeCat = id; drawSidebarNav(); drawAdminTabContent();
+}
+function toggleCatQuotes(jobId, catId){
+  const el = document.getElementById('catquotes-'+jobId);
+  if(!el) return;
+  if(openCatQuotePanels.has(jobId)){
+    openCatQuotePanels.delete(jobId);
+    clearListener('catquotes-'+jobId);
+    el.innerHTML = '';
+    return;
+  }
+  openCatQuotePanels.add(jobId);
+  el.innerHTML = `<div class="empty" style="padding:16px;">กำลังโหลดใบเสนอราคา…</div>`;
+  const job = ADMIN_STATE.jobs.find(j=>j.id===jobId);
+  const items = ((job && job.items) || []).filter(it=>it.categoryId===catId);
+  setListener('catquotes-'+jobId, db.collection('quotes').where('jobId','==',jobId).onSnapshot(snap=>{
+    const bidsDocs = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderQuotesPanel(el, jobId, items, bidsDocs, 'cat_');
+  }, err=>{ console.error('catquotes listener error', err); el.innerHTML = `<div class="empty" style="padding:16px;">โหลดใบเสนอราคาไม่สำเร็จ</div>`; }));
+}
 function setJobStatusFilter(f){ ADMIN_STATE.jobStatusFilter = f; drawAdminTabContent(); }
 function catName(id){ const c = ADMIN_STATE.categories.find(c=>c.id===id); return c ? c.name : 'ไม่ระบุหมวดงาน'; }
 
@@ -753,7 +793,7 @@ function toggleAdminBidItem(key){
   body.style.display = willShow ? 'block' : 'none';
   if(arrow) arrow.classList.toggle('open', willShow);
 }
-function renderQuotesPanel(el, jobId, items, bidsDocs){
+function renderQuotesPanel(el, jobId, items, bidsDocs, idPrefix=''){
   if(bidsDocs.length===0){
     el.innerHTML = `<div class="empty" style="padding:16px;">ยังไม่มีผู้เสนอราคาเข้ามา</div>`;
     return;
@@ -774,7 +814,7 @@ function renderQuotesPanel(el, jobId, items, bidsDocs){
           return pa - pc;
         });
         const unitSuffix = it.unit ? (' / ' + escapeHtml(it.unit)) : '';
-        const key = jobId+'_'+it.id;
+                const key = idPrefix+jobId+'_'+it.id;
         const metaBits = [it.spec, it.unit?('หน่วย: '+it.unit):''].filter(Boolean).join(' · ') || '-';
         const metaLine = metaBits + ' · ' + offers.length + ' ผู้เสนอราคา' + (min!==Infinity ? ' · ต่ำสุด ' + fmtBaht(min) + unitSuffix : '');
         return `<div class="abid-item" style="border-left-color:${st.border};">
