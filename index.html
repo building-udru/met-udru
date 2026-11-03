@@ -135,6 +135,8 @@
   .badge-role{background:#eef1fb;color:#3a4b8a;font-size:12px;padding:4px 12px;}
   .badge-role.admin{background:#efe9ff;color:#5b3fd9;}
   .badge-role.vendor{background:#fdf0e3;color:#b5730f;}
+    body.viewer .badge-role.admin{font-size:0;background:#e7f3ff;color:#2568c9;}
+  body.viewer .badge-role.admin::after{content:'👁️ ผู้ชม';font-size:12px;}
 
   .cat-chip{display:inline-block;padding:6px 14px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:600;margin:0 6px 6px 0;cursor:pointer;background:var(--bg-3);color:var(--ink-soft);transition:border-color .12s ease, color .12s ease, background .12s ease, transform .12s ease;}
   .cat-chip:hover{border-color:var(--safety);color:var(--safety-deep);transform:translateY(-1px);}
@@ -341,7 +343,7 @@ const DEFAULT_CATEGORIES = [
 
 /* โหมดทดสอบ: ข้ามหน้าล็อกอินแอดมิน ต้องปิดก่อนใช้งานจริง (พร้อมตั้ง Firestore Rules ให้รัดกุม — ดูหมายเหตุด้านล่างสุดของไฟล์) */
 const TEST_MODE_NO_LOGIN = false;
-const READ_ONLY = new URLSearchParams(location.search).has('view');
+let READ_ONLY = true;
 
 const app = document.getElementById('app');
 const topbarActions = document.getElementById('topbarActions');
@@ -397,15 +399,12 @@ if(isVendor){
   renderVendorPortal();
 } else {
   sidebarEl.style.display = 'flex';
-  document.getElementById('sidebarFoot').textContent = 'โหมดผู้ดูแลระบบ';
   mainTitle.textContent = 'ภาพรวม';
   topbarSub.textContent = 'หลังบ้านผู้ดูแล';
-  roleBadgeEl.textContent = '🛡️ แอดมิน';
-  roleBadgeEl.classList.add('admin');
-    if(READ_ONLY){
-    roleBadgeEl.textContent = '👁️ ผู้ชม';
-    document.getElementById('sidebarFoot').textContent = 'โหมดดูอย่างเดียว';
-    renderAdmin({email:'ผู้ชม (ดูอย่างเดียว)'});
+  auth.onAuthStateChanged(user=>{
+    READ_ONLY = !user;
+    document.getElementById('sidebarFoot').textContent = user ? 'โหมดผู้ดูแลระบบ' : 'โหมดดูอย่างเดียว';
+    renderAdmin(user || {email:null});
   } else if(TEST_MODE_NO_LOGIN){
     renderAdmin({email:'ผู้ดูแลระบบ'});
   } else {
@@ -427,6 +426,7 @@ function renderLogin(){
       <label>รหัสผ่าน</label><input id="loginPass" type="password" placeholder="••••••••">
       <button class="btn btn-primary" style="width:100%;margin-top:18px;" onclick="doLogin()">เข้าสู่ระบบ</button>
       <div class="hint" id="loginErr" style="color:var(--flame);margin-top:10px;"></div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="renderAdmin({email:null})">← กลับไปดูอย่างเดียว</button>
       <p class="hint" style="margin-top:16px;">สร้างบัญชีผู้ดูแลได้ที่ Firebase Console &gt; Authentication &gt; Sign-in method &gt; Email/Password</p>
     </div>`;
 }
@@ -445,9 +445,11 @@ let ADMIN_STATE = { tab:'bid', categories:[], jobs:[], products:[], activeCat:'a
   selectedJobId:null, navBidOpen:false, navBidGroupOpen:null, navDataOpen:false };
 
 function renderAdmin(user){
-  topbarActions.innerHTML = (TEST_MODE_NO_LOGIN || READ_ONLY) ? `
+  document.body.classList.toggle('viewer', READ_ONLY);
+  topbarActions.innerHTML = READ_ONLY ? `
     <div style="display:flex;align-items:center;gap:12px;">
-      <span class="hint" style="margin:0;">${escapeHtml(user.email)}</span>
+      <span class="hint" style="margin:0;">ผู้ชม (ดูอย่างเดียว)</span>
+      <button class="btn btn-primary btn-sm" onclick="renderLogin()">🔐 เข้าสู่ระบบเพื่อแก้ไข</button>
     </div>
   ` : `
     <div style="display:flex;align-items:center;gap:12px;">
@@ -456,7 +458,6 @@ function renderAdmin(user){
     </div>`;
   loadAdminData();
 }
-
 async function loadAdminData(){
   app.innerHTML = `<div class="empty">กำลังโหลดข้อมูล…</div>`;
   const catSnap = await db.collection('categories').orderBy('order').get().catch(()=>null);
