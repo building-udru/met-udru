@@ -626,7 +626,12 @@ function copyLink(url){ navigator.clipboard.writeText(url).then(()=>toast('📋 
 
 function drawAdminTabContent(){
   const el = document.getElementById('adminTabContent');
-  if(ADMIN_STATE.tab==='bid') el.innerHTML = adminBidTabHtml(); else el.innerHTML = adminDataTabHtml();
+  if(ADMIN_STATE.tab==='bid'){
+    el.innerHTML = adminBidTabHtml();
+  } else {
+    el.innerHTML = adminDataTabHtml();
+    openDataQuotePanels.forEach(id=>subscribeDataQuotes(id));
+  }
 }
 
 /* ---------- ADMIN: BIDDING TAB ---------- */
@@ -958,6 +963,22 @@ function adminDataTabHtml(){
     return (p.productName||'').toLowerCase().includes(q) || (p.companyName||'').toLowerCase().includes(q);
   });
   const totalLabel = ADMIN_STATE.productsTotalCount!=null ? ADMIN_STATE.productsTotalCount : ADMIN_STATE.products.length;
+    const specGroups = dataJobsWithSpecs();
+  const specTotal = specGroups.reduce((s,x)=>s+x.its.length,0);
+  const specSection = `<div class="card">
+    <span class="eyebrow">รายการสเปค${cat==='all'?'ทุกหมวด':'หมวด “'+escapeHtml(catName(cat))+'”'} จากทุกโครงการ (${specTotal} รายการ)</span>
+    ${specGroups.length===0 ? '<div class="hint">ยังไม่มีรายการสเปคในหมวดนี้</div>' : specGroups.map(({j,its})=>{
+      const isOpen = j.status!=='closed';
+      return `<div class="bid-card">
+        <div class="bid-card-top">
+          <div class="job-title" style="font-size:14.5px;">📁 ${escapeHtml(j.title)} <span class="badge ${isOpen?'badge-open':'badge-closed'}">${isOpen?'🟢 เปิดรับ':'⚪ ปิดรับแล้ว'}</span></div>
+          <button class="btn btn-sm" onclick="toggleDataQuotes('${j.id}')">💰 ดูราคาที่เสนอ</button>
+        </div>
+        ${its.map(it=>`<div class="bid-item-row"><span class="lp">${escapeHtml(it.name)}${it.spec?' · '+escapeHtml(it.spec):''}</span><span class="hint" style="margin:0;">${escapeHtml(catName(it.categoryId))}${it.unit?' · หน่วย: '+escapeHtml(it.unit):''}</span></div>`).join('')}
+        <div id="dataquotes-${j.id}"></div>
+      </div>`;
+    }).join('')}
+  </div>`;
   return `
     <div class="card">
       <span class="eyebrow">หมวดงาน</span>
@@ -972,6 +993,7 @@ function adminDataTabHtml(){
       <label>ค้นหาชื่อสินค้า / ผู้เสนอราคา (ค้นหาในรายการที่โหลดไว้ด้านล่างเท่านั้น — กด “โหลดเพิ่ม” ถ้าหาไม่เจอ)</label>
       <input placeholder="พิมพ์เพื่อค้นหา" value="${escapeHtml(ADMIN_STATE.productFilter||'')}" oninput="ADMIN_STATE.productFilter=this.value; drawAdminTabContent();">
     </div>
+    ${specSection}
     <div class="card">
       <span class="eyebrow">สินค้าที่ผู้เสนอราคาเสนอเข้ามาอิสระ (แสดง ${list.length} จาก ${totalLabel} รายการ · อัปเดตสด) — เห็นราคาได้เฉพาะแอดมิน</span>
       ${list.length===0 ? `<div class="empty"><div class="disp">📭 ยังไม่มีข้อมูลสินค้า</div>ให้ผู้เสนอราคาเข้าลิงก์เดียวกันแล้วเลือกแท็บ “เสนอสินค้าทั่วไป”</div>` :
@@ -995,13 +1017,55 @@ function adminDataTabHtml(){
     </div>`;
 }
 function setProductCat(id){
+  resetDataQuotes();
   ADMIN_STATE.productCat = id;
   ADMIN_STATE.productsLimit = 25;
   subscribeAdminProducts();
   drawSidebarNav();
   drawAdminTabContent();
 }
+
+let openDataQuotePanels = new Set();
+function dataJobsWithSpecs(){
+  const cat = ADMIN_STATE.productCat;
+  return ADMIN_STATE.jobs.map(j=>({
+    j, its:(j.items||[]).filter(it=>cat==='all' || it.categoryId===cat)
+  })).filter(x=>x.its.length);
+}
+function subscribeDataQuotes(jobId){
+  const el = document.getElementById('dataquotes-'+jobId);
+  if(!el) return;
+  const job = ADMIN_STATE.jobs.find(j=>j.id===jobId);
+  const cat = ADMIN_STATE.productCat;
+  const items = ((job&&job.items)||[]).filter(it=>cat==='all' || it.categoryId===cat);
+  el.innerHTML = `<div class="empty" style="padding:16px;">กำลังโหลดใบเสนอราคา…</div>`;
+  setListener('dataquotes-'+jobId, db.collection('quotes').where('jobId','==',jobId).onSnapshot(snap=>{
+    const bidsDocs = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    const target = document.getElementById('dataquotes-'+jobId);
+    if(target) renderQuotesPanel(target, jobId, items, bidsDocs);
+  }, err=>{
+    console.error('dataquotes listener error', err);
+    const target = document.getElementById('dataquotes-'+jobId);
+    if(target) target.innerHTML = `<div class="empty" style="padding:16px;">โหลดใบเสนอราคาไม่สำเร็จ</div>`;
+  }));
+}
+function toggleDataQuotes(jobId){
+  if(openDataQuotePanels.has(jobId)){
+    openDataQuotePanels.delete(jobId);
+    clearListener('dataquotes-'+jobId);
+    const el = document.getElementById('dataquotes-'+jobId); if(el) el.innerHTML = '';
+    return;
+  }
+  openDataQuotePanels.add(jobId);
+  subscribeDataQuotes(jobId);
+}
+function resetDataQuotes(){
+  openDataQuotePanels.forEach(id=>clearListener('dataquotes-'+id));
+  openDataQuotePanels.clear();
+}
+
 async function deleteProduct(id){
+  if(READ_ONLY) return;
   if(!confirm('ยืนยันลบรายการสินค้านี้?')) return;
   await db.collection('products').doc(id).delete();
   await db.collection('publicProducts').doc(id).delete().catch(()=>{});
