@@ -341,6 +341,7 @@ const DEFAULT_CATEGORIES = [
 
 /* โหมดทดสอบ: ข้ามหน้าล็อกอินแอดมิน ต้องปิดก่อนใช้งานจริง (พร้อมตั้ง Firestore Rules ให้รัดกุม — ดูหมายเหตุด้านล่างสุดของไฟล์) */
 const TEST_MODE_NO_LOGIN = false;
+const READ_ONLY = new URLSearchParams(location.search).has('view');
 
 const app = document.getElementById('app');
 const topbarActions = document.getElementById('topbarActions');
@@ -401,7 +402,11 @@ if(isVendor){
   topbarSub.textContent = 'หลังบ้านผู้ดูแล';
   roleBadgeEl.textContent = '🛡️ แอดมิน';
   roleBadgeEl.classList.add('admin');
-  if(TEST_MODE_NO_LOGIN){
+    if(READ_ONLY){
+    roleBadgeEl.textContent = '👁️ ผู้ชม';
+    document.getElementById('sidebarFoot').textContent = 'โหมดดูอย่างเดียว';
+    renderAdmin({email:'ผู้ชม (ดูอย่างเดียว)'});
+  } else if(TEST_MODE_NO_LOGIN){
     renderAdmin({email:'ผู้ดูแลระบบ'});
   } else {
     auth.onAuthStateChanged(user=>{ if(user){ renderAdmin(user); } else { renderLogin(); } });
@@ -440,7 +445,7 @@ let ADMIN_STATE = { tab:'bid', categories:[], jobs:[], products:[], activeCat:'a
   selectedJobId:null, navBidOpen:false, navBidGroupOpen:null, navDataOpen:false };
 
 function renderAdmin(user){
-  topbarActions.innerHTML = TEST_MODE_NO_LOGIN ? `
+  topbarActions.innerHTML = (TEST_MODE_NO_LOGIN || READ_ONLY) ? `
     <div style="display:flex;align-items:center;gap:12px;">
       <span class="hint" style="margin:0;">${escapeHtml(user.email)}</span>
     </div>
@@ -660,13 +665,13 @@ function adminBidTabHtml(){
           const count = ADMIN_STATE.jobs.filter(j=>jobHasCat(j,c.id)).length;
           return `<span class="cat-chip ${activeCat===c.id?'active':''}" onclick="setCat('${c.id}')">${escapeHtml(c.name)} (${count})</span>`;
         }).join('')}
-        <span class="cat-chip" style="border-style:dashed;" onclick="promptNewCategory()">➕ เพิ่มหมวดงาน</span>
+                ${READ_ONLY ? '' : `<span class="cat-chip" style="border-style:dashed;" onclick="promptNewCategory()">➕ เพิ่มหมวดงาน</span>`}
       </div>
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
         <span class="eyebrow" style="margin:0;">รายการโครงการ${statusFilter==='closed'?' — ปิดรับแล้ว':' — เปิดรับอยู่'}</span>
-        <button class="btn btn-primary btn-sm" onclick="openJobModal()">➕ สร้างโครงการใหม่</button>
+                ${READ_ONLY ? '' : `<button class="btn btn-primary btn-sm" onclick="openJobModal()">➕ สร้างโครงการใหม่</button>`}
       </div>
       <p class="hint" style="margin-top:0;">ใช้เมนู “ประมูลราคาโครงการ” ในแถบด้านข้างเพื่อสลับดู เปิดรับ/ปิดรับแล้ว หรือเลือกดูเฉพาะโครงการ</p>
       <div id="jobList">
@@ -690,9 +695,10 @@ function renderJobRow(j){
       </div>
       <div class="job-actions">
         <button class="btn btn-sm" onclick="toggleQuotes('${j.id}')">💰 ดูราคาที่เสนอ</button>
+        ${READ_ONLY ? '' : `
         <button class="btn btn-ghost btn-sm" onclick="openJobModal('${j.id}')">✏️ แก้ไข</button>
         <button class="btn btn-ghost btn-sm" onclick="toggleJobStatus('${j.id}','${isOpen?'closed':'open'}')">${isOpen?'🔒 ปิดรับงาน':'🔓 เปิดรับอีกครั้ง'}</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteJob('${j.id}')">🗑️ ลบ</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteJob('${j.id}')">🗑️ ลบ</button>`}
       </div>
     </div>
     <div id="quotes-${j.id}"></div>`;
@@ -942,7 +948,7 @@ function adminDataTabHtml(){
           </div>
           ${p.description?`<div class="quote-note">📝 รายละเอียด: ${escapeHtml(p.description)}</div>`:''}
           ${p.fileURL?`<div class="quote-file">📎 <a href="${p.fileURL}" target="_blank" rel="noopener">${escapeHtml(p.fileName||'เอกสารแนบ/รูปภาพ')}</a></div>`:''}
-          <div style="margin-top:8px;"><button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">🗑️ ลบรายการนี้</button></div>
+                    ${READ_ONLY ? '' : `<div style="margin-top:8px;"><button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">🗑️ ลบรายการนี้</button></div>`}
         </div>`).join('')}
       ${ADMIN_STATE.productsHasMore ? `<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px;" onclick="loadMoreAdminProducts()">⬇️ โหลดเพิ่ม</button>` : ''}
     </div>`;
